@@ -7,7 +7,7 @@ import discord
 import time
 import asynchio
 
-message = joined = 0
+#message = joined = 0
 
 TOKEN = 'NTY2ODg5NjQ1NjUzMjI5NTc5.XLLmBw.s5c_X7P5cGHSZJVGYpw5oNpr_-o'
 #replace this with the bot token in order for it to work properly
@@ -38,7 +38,6 @@ async def on_member_update(before, after):
             else:
                 await after.edit(nick="NO STOP THAT")
 
-
 @client.event
 async def on_member_join(member):
     global joined
@@ -47,12 +46,11 @@ async def on_member_join(member):
         if str(channel) == "general":
             await channel.send(f"""Welcome to the server {member.mention}""")
 
-
 @client.event
 async def on_message(message):
     global messages
     messages += 1
-    
+
     # we do not want the bot to reply to itself
     if message.author == client.user:
         return
@@ -75,7 +73,7 @@ async def on_message(message):
 
     if str(message.channel) in channels and str(message.author) in valid_users:
         if message.content.find("!hello") != -1:
-            await message.channel.send("Hi") 
+            await message.channel.send("Hi")
         elif message.content == "!users":
             await message.channel.send(f"""# of Members: {id.member_count}""")
 
