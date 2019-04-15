@@ -38,4 +38,4 @@ Thumbs.db
 
 # Files needed for operation #
 ######################
-/secrets/**
+init.cfg
