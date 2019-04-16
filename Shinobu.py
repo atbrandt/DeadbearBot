@@ -1,6 +1,10 @@
+# Shinobu Bot main execution
+# Written by a few weebs
+
 import discord
-import configparser
+import time
 import asyncio
+import configparser
 from discord.ext.commands import Bot
 from pathlib import Path
 
@@ -14,15 +18,23 @@ TOKEN = CONFIG['Bot']['Token']
 prefix = "-"
 bot = Bot(command_prefix=prefix)
 
-@bot.command(name='greet')
-async def hello(command):
-    await command.send("hello world")
-
 @bot.event
 async def on_ready():
-    print('Logged in as')
+    print('Bot is ready')
     print(bot.user.name)
     print(bot.user.id)
     print('------')
+
+# @bot.event
+# async def on_member_join(member):
+@bot.command(name="greet")
+async def hello(context):
+    channel = context.message.channel
+    member = context.message.author
+    print("Message sent in", channel)
+    if str(channel) == 'bot-testin':
+        await channel.send(f"""Welcome to the server {member.mention}""")
+    else:
+        return
 
 bot.run(TOKEN)
