@@ -13,7 +13,7 @@ from pathlib import Path
 
 CONFIG = configparser.ConfigParser()
 CONFIG.read("init.cfg")
-TOKEN = CONFIG['Bot']['Token']
+TOKEN = CONFIG['DEFAULT']['Token']
 
 prefix = "-"
 bot = Bot(command_prefix=prefix)
@@ -34,7 +34,5 @@ async def hello(context):
     print("Message sent in", channel)
     if str(channel) == 'bot-testin':
         await channel.send(f"""Welcome to the server {member.mention}""")
-    else:
-        return
 
 bot.run(TOKEN)
