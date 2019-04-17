@@ -11,7 +11,7 @@ messages = joined = 0 #For update_stats() fxn
 
 #This fxn is to read the token.txt file,
 #Then assign it to the variable token
-def read_token();
+def read_token():
     with open("token.txt", "r") as f:
         lines = f.readlines()
         return lines[0].strip()
@@ -66,7 +66,7 @@ async def on_message(message):
     global messages
     messages += 1
 
-    id = client.get_guild(ID HERE) #your server ID goes here.
+    id = client.get_guild(567849703832551426) #your server ID goes here. In this case, it's my personal test server.
     channels = ["commands"];
     required_prefix = ":" #Need to start a cmd with this. Otherwise, it won't work.
     #valid_users = ["ABCD#1234"] #<--- only allows users in this list to use commands
@@ -77,13 +77,13 @@ async def on_message(message):
 #            print("Whoa, don't say that.")
 #            await message.channel.purge(limit = 1)
 
-    if message.content == "1"
+    if message.content == "1":
     #if str(message.channel) in channels and str(message.author) in valid_users: (only for it you want specific USERS to use commands in commands channel)
-    if str(message.channel) in channels: # Check if its in correct channel
-        if message.content.find(required_prefix + "hello") != -1:
-            await message.channel.send("Hello! :wave: ") # if the user says !hello we will send back hi
-        elif message.content == (required_prefix + "users"):
-            await message.channel.send(f"""# of Members: {id.member_count}""") #we can use id.member_count
+        if str(message.channel) in channels: # Check if its in correct channel
+            if message.content.find(required_prefix + "hello") != -1:
+                await message.channel.send("Hello! :wave: ") # if the user says !hello we will send back hi
+            elif message.content == (required_prefix + "users"):
+                await message.channel.send(f"""# of Members: {id.member_count}""") #we can use id.member_count
 
 client.loop.create_task(update_stats())
 client.run(token)
