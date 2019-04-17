@@ -15,10 +15,9 @@ from pathlib import Path
 # Initialize global variables and functions
 CFGPARSE = configparser.ConfigParser()
 CFGPARSE.read('init.cfg')
-TOKEN = CFGPARSE['DEFAULT']['Token']
+bot = commands.Bot(command_prefix = CFGPARSE['DEFAULT']['Prefix'])
 greet = CFGPARSE['DEFAULT']['Greet']
 greetChannel = CFGPARSE['DEFAULT']['GreetChannel']
-bot = commands.Bot(command_prefix = CFGPARSE['DEFAULT']['Prefix'])
 
 
 # Function to reinitialize the Bot
@@ -105,4 +104,10 @@ async def change_prefix(context):
 
 
 # Execute the Bot
+if CFGPARSE['DEFAULT']['Token'] == "":
+    TOKEN = input("Enter your bot's token: ")
+    write_cfg('DEFAULT', 'Token', TOKEN)
+else:
+    TOKEN = CFGPARSE['DEFAULT']['Token']
+
 bot.run(TOKEN)
