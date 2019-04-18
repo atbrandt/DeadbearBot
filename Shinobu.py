@@ -76,8 +76,8 @@ async def change_greet(context, *opt_arg):
 # Greet new users upon joining guild
 @bot.event
 async def on_member_join(member):
-    if CFGPARSE['Greet'] == "enable":
-        channel = bot.get_channel(int(CFGPARSE['GreetChannel']))
+    if CFGPARSE['DEFAULT']['Greet'] == "enable":
+        channel = bot.get_channel(int(CFGPARSE['DEFAULT']['GreetChannel']))
         await channel.send(f"Welcome to the server {member.mention}!")
 
 
