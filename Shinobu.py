@@ -6,6 +6,7 @@ import asyncio
 import aiohttp
 import configparser
 from discord.ext import commands
+from discord.utils import get
 from pathlib import Path
 
 # Setting platform-independent path to working directory and config file
@@ -53,6 +54,30 @@ async def hello_world(context):
     await channel.send(f"Hello {author}!")
 
 
+# Assign a role upon joining guild
+@bot.command(name = 'AutoRole',
+             description = ("Sets a role that users get automatically upon "
+                            "joining the server. "
+                            "Pass \"enable\" or \"disable\" to turn "
+                            "the auto-role on or off."),
+             brief = "Modify auto-role settings.",
+             aliases = ["arole"])
+async def auto_role(context, *args):
+    channel = context.channel
+    guild = context.guild
+    args = ''.join(args)
+    if args == '':
+        await channel.send("You need to include a role name or ID!")
+    else:
+        arole = get(guild.roles, name=args)
+        if arole == None:
+            int(args)
+            arole = guild.get_role(args)
+            if arole == None:
+                await channel.send("No role found! Check the name or ID")
+        else:
+            await channel.send("ding")
+
 # Set the greet channel
 @bot.command(name = 'ChangeGreet',
              description = ("Sets the current channel for greet messages. "
@@ -60,26 +85,25 @@ async def hello_world(context):
                             "the greet message on or off."),
              brief = "Modify greet message settings.",
              aliases = ["greet"])
-async def change_greet(context, *opt_arg):
+async def change_greet(context, *args):
     channel = context.channel
-    opt_arg = ''.join(opt_arg)
-    options = {'enable', 'disable'}
-    
-    if opt_arg == '':
+    args = ''.join(args)
+    if args == '':
         write_cfg(GreetChannel=str(context.channel.id))
         await channel.send(f"Set {channel} as the greeting channel.")
-    elif opt_arg in options:
-        write_cfg(Greet=str(opt_arg))
-        await channel.send(f"The greet message is now {opt_arg}d!")
+    elif args in ('enable', 'disable'):
+        write_cfg(Greet=str(args))
+        await channel.send(f"The greet message is now {args}d!")
 
 
-# Greet new users upon joining guild
+# Do stuff to new users upon joining guild
 @bot.event
 async def on_member_join(member):
+    if CFGPARSE['Autorole'] == "enable":
+        pass
     if CFGPARSE['Greet'] == "enable":
         channel = bot.get_channel(int(CFGPARSE['GreetChannel']))
         await channel.send(f"Welcome to the server {member.mention}!")
-
 
 # Change the default bot prefix
 @bot.command(name = 'ChangePrefix',
