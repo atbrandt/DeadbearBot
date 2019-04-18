@@ -28,8 +28,10 @@ def write_cfg(*args, **kwargs):
 if not Path.exists(CONFIG):
     CFGPARSE['DEFAULT'] = {'Token': '',
                            'Prefix': '-',
-                           'Greet': 'disable',
-                           'GreetChannel': ''}
+                           'GreetState': 'disable',
+                           'GreetChannel': '',
+                           'AutoRoleState': 'disable',
+                           'AutoRole':''}
     TOKEN = input("Enter your bot's token: ")
     write_cfg(Token=TOKEN)
 else:
@@ -65,18 +67,29 @@ async def hello_world(context):
 async def auto_role(context, *args):
     channel = context.channel
     guild = context.guild
-    args = ''.join(args)
-    if args == '':
-        await channel.send("You need to include a role name or ID!")
+    args = ''.join(args)    
+
+    if args.isdigit():
+        gotRole = guild.get_role(args)
     else:
-        arole = get(guild.roles, name=args)
-        if arole == None:
-            int(args)
-            arole = guild.get_role(args)
-            if arole == None:
-                await channel.send("No role found! Check the name or ID")
-        else:
-            await channel.send("ding")
+        gotRole = get(guild.roles, name=args)
+
+    if gotRole is not None:
+        write_cfg(AutoRole=str(gotRole.id))
+        await channel.send(f"Set {gotRole.name} to be automatically assigned "
+                            "to new users.")
+    else:
+        await channel.send("No role found! Check the name or ID entered.")
+
+
+# Error handler for auto_role function
+@auto_role.error
+async def auto_role_error(context, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        await context.channel.send("You need to include a role name or ID!")
+#    elif isinstance(error, commands.CommandError):
+#        await context.channel.send("Och! Something wrong! Don't worry \:\)")
+
 
 # Set the greet channel
 @bot.command(name = 'ChangeGreet',
@@ -99,11 +112,15 @@ async def change_greet(context, *args):
 # Do stuff to new users upon joining guild
 @bot.event
 async def on_member_join(member):
-    if CFGPARSE['Autorole'] == "enable":
-        pass
-    if CFGPARSE['Greet'] == "enable":
-        channel = bot.get_channel(int(CFGPARSE['GreetChannel']))
-        await channel.send(f"Welcome to the server {member.mention}!")
+    if CFGPARSE['DEFAULT']['AutoRoleState'] == 'enable':
+        if CFGPARSE['DEFAULT']['AutoRole'] != '':
+#            member = get(guild.members, name=member)
+#            await member.add_roles(CFGPARSE['DEFAULT']['AutoRole'])
+            pass
+    if CFGPARSE['DEFAULT']['GreetState'] == 'enable':
+        if CFGPARSE['DEFAULT']['GreetChannel'] != '':
+            channel = bot.get_channel(int(CFGPARSE['DEFAULT']['GreetChannel']))
+            await channel.send(f"Welcome to the server {member.mention}!")
 
 # Change the default bot prefix
 @bot.command(name = 'ChangePrefix',
