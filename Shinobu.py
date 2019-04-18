@@ -112,3 +112,41 @@ try:
     bot.run(CFGPARSE['DEFAULT']['Token'])
 except:
     print("Something's wrong with the token! Check the config file.")
+
+# messages = joined = 0 #For update_stats() fxn
+#
+# async fxn for logging and storing information/data
+# @client.event
+# async def update_stats():
+#    await client.wait_until_ready()
+#    global messages, joined
+#
+#    while not client.is_closed():
+#        try:
+#            with open("stats.txt", "a") as f:
+#                f.write(f"Time: {int(time.time())}, Messages: {messages}, Members joined: {joined}\n")
+#
+#            messages = 0
+#            joined = 0
+#
+#            await asyncio.sleep(5)
+#        except Exception as e:
+#            print(e)
+#            await asyncio.sleep(5)
+#
+# Async fxn designed to change nicknames
+# async def on_member_update(before, after):
+#    n = after.nick
+#    if n:
+#        if n.lower().count("staff") > 0: # If username contains staff
+#            last = before.nick
+#            if last: # if they had a username before change it back to that.
+#                await after.edit(nick=last)
+#            else: #Otherwise set it to Cheeky Breeky.
+#                await after.edit(nick = "Cheeky Breeky")
+#
+#    for word in no-no_words:
+#        if message.content.count(word)>0:
+#            print("Whoa, don't say that.")
+#            await message.channel.purge(limit = 1)
+
