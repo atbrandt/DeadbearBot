@@ -7,6 +7,9 @@ import aiohttp
 import configparser
 from discord.ext import commands
 from pathlib import Path
+#from discord.ext.commands import Bot
+
+#Client = Bot('-')
 
 # Setting platform-independent path to working directory and config file
 CURRENTDIR = Path.cwd()
@@ -43,7 +46,6 @@ async def on_ready():
     print(f"{bot.user.name} is ready, user ID is {bot.user.id}")
     print("------")
 
-
 # Testing command
 @bot.command(name = 'test')
 async def hello_world(context):
@@ -52,6 +54,33 @@ async def hello_world(context):
     print(f"Message sent in {channel}")
     await channel.send(f"Hello {author}!")
 
+# # Admin-only command to purge chunks of text
+# @bot.command(name = 'purge')
+# async def purge_text(context, num):
+#     messages = [] #empty list to put all the messages in the log
+#     number = int(num) #converting the number of messages to delete to an integer
+#     async for x in Client.logs_from(context.message.channel, limit = number)
+#         messages.append(x)
+#     await Client.delete_messages(messages)
+
+
+# # command to self-assign a role
+# @bot.command(name = 'giveme',
+#              pass_context = True,
+#              no_pm = True)
+# async def assignme(self, context, role : discord.Role)
+#     user = context.message.author #get user that typed the commands
+#     error = False
+#     for srole in context.message.server.roles:
+#         if srole.name == role.name:
+#             if role.id in self.selfrole_list:
+#                 try:
+#                     await self.bot.add_roles(user, role)
+#                     await channel.send("You now have the " + role.name + " role.")
+#                 except discord.Forbidden:
+#                     await channel.send("There appears to be an error with setting that role.")
+#             else:
+#                 await channel.send("That is not in the list of roles you can assign yourself!")
 
 # Set the greet channel
 @bot.command(name = 'ChangeGreet',
@@ -64,7 +93,7 @@ async def change_greet(context, *opt_arg):
     channel = context.channel
     opt_arg = ''.join(opt_arg)
     options = {'enable', 'disable'}
-    
+
     if opt_arg == '':
         write_cfg(GreetChannel=str(context.channel.id))
         await channel.send(f"Set {channel} as the greeting channel.")
@@ -90,7 +119,7 @@ async def on_member_join(member):
 async def change_prefix(context):
     author = context.message.author
     channel = context.message.channel
-    
+
     def check(reply):
         return reply.author == author and reply.channel == channel
 
@@ -105,7 +134,6 @@ async def change_prefix(context):
         write_cfg(Prefix=str(newprefix.content))
         bot.command_prefix = newprefix.content
         await channel.send(f"My command prefix is now \"{newprefix.content}\".")
-
 
 # Execute the Bot
 try:
@@ -149,4 +177,3 @@ except:
 #        if message.content.count(word)>0:
 #            print("Whoa, don't say that.")
 #            await message.channel.purge(limit = 1)
-
