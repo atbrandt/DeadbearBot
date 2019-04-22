@@ -29,7 +29,7 @@ def write_cfg(*args, **kwargs):
 # Initialize config
 if not Path.exists(CONFIG):
     CFGPARSE['DEFAULT'] = {'Token': '',
-                           'Prefix': '-',
+                           'Prefix': '$',
                            'Greet': 'disable',
                            'GreetChannel': ''}
     TOKEN = input("Enter your bot's token: ")
@@ -65,9 +65,7 @@ async def hello_world(context):
 
 
 # # command to self-assign a role
-# @bot.command(name = 'giveme',
-#              pass_context = True,
-#              no_pm = True)
+# @bot.command(name = 'giveme')
 # async def assignme(self, context, role : discord.Role)
 #     user = context.message.author #get user that typed the commands
 #     error = False
@@ -75,7 +73,7 @@ async def hello_world(context):
 #         if srole.name == role.name:
 #             if role.id in self.selfrole_list:
 #                 try:
-#                     await self.bot.add_roles(user, role)
+#                     await guild.add_roles(user, role)
 #                     await channel.send("You now have the " + role.name + " role.")
 #                 except discord.Forbidden:
 #                     await channel.send("There appears to be an error with setting that role.")
