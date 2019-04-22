@@ -14,11 +14,20 @@ CURRENTDIR = Path.cwd()
 CONFIG = CURRENTDIR / "init.cfg"
 
 # Initialize configparser settings
-CFGPARSE = configparser.ConfigParser(allow_no_value = True,
-                                     empty_lines_in_values = False)
+CFGPARSE = configparser.ConfigParser(empty_lines_in_values = False)
+CFGPARSE.optionxform = lambda option: option
+
+# Set a reference of default options that must exist in config
+defaultcfg = {'Token': '',
+              'Prefix': '-',
+              'GreetState': 'disable',
+              'GreetChannelID': '',
+              'AutoRoleState': 'disable',
+              'AutoRoleID': ''}
 
 # Function for writing to the config file
 def write_cfg(*args, **kwargs):
+    args = ''.join(args)
     for key, value in kwargs.items():
         CFGPARSE.set(args, key, value)
     with Path.open(CONFIG, 'w') as configfile:
@@ -26,19 +35,14 @@ def write_cfg(*args, **kwargs):
 
 # Initialize config
 if not Path.exists(CONFIG):
-    CFGPARSE['DEFAULT'] = {'Token': '',
-                           'Prefix': '-',
-                           'GreetState': 'disable',
-                           'GreetChannel': '',
-                           'AutoRoleState': 'disable',
-                           'AutoRole':''}
-    TOKEN = input("Enter your bot's token: ")
-    write_cfg(Token=TOKEN)
+    CFGPARSE['Settings'] = defaultcfg
+    write_cfg()
+    write_cfg('Settings', Token = input("Enter your bot's token: "))
 else:
     CFGPARSE.read(CONFIG)
 
 # Initialize the bot and set the default command prefix
-bot = commands.Bot(command_prefix = CFGPARSE['DEFAULT']['Prefix'])
+bot = commands.Bot(command_prefix = CFGPARSE['Settings']['Prefix'])
 
 # Output info to console once bot is initialized and ready
 @bot.event
@@ -69,13 +73,16 @@ async def auto_role(context, *args):
     guild = context.guild
     args = ''.join(args)    
 
-    if args.isdigit():
+    if args in ('enable', 'disable'):
+        write_cfg('Settings', AutoRoleState = args)
+        await channel.send(f"The Auto-Role is now {args}d!")
+    elif args.isdigit():
         gotRole = guild.get_role(args)
     else:
-        gotRole = get(guild.roles, name=args)
+        gotRole = get(guild.roles, name = args)
 
     if gotRole is not None:
-        write_cfg(AutoRole=str(gotRole.id))
+        write_cfg('Settings', AutoRoleID = str(gotRole.id))
         await channel.send(f"Set {gotRole.name} to be automatically assigned "
                             "to new users.")
     else:
@@ -102,24 +109,24 @@ async def change_greet(context, *args):
     channel = context.channel
     args = ''.join(args)
     if args == '':
-        write_cfg(GreetChannel=str(context.channel.id))
+        write_cfg('Settings', GreetChannelID = str(context.channel.id))
         await channel.send(f"Set {channel} as the greeting channel.")
     elif args in ('enable', 'disable'):
-        write_cfg(Greet=str(args))
+        write_cfg('Settings', GreetState = str(args))
         await channel.send(f"The greet message is now {args}d!")
 
 
 # Do stuff to new users upon joining guild
 @bot.event
 async def on_member_join(member):
-    if CFGPARSE['DEFAULT']['AutoRoleState'] == 'enable':
-        if CFGPARSE['DEFAULT']['AutoRole'] != '':
-#            member = get(guild.members, name=member)
-#            await member.add_roles(CFGPARSE['DEFAULT']['AutoRole'])
-            pass
-    if CFGPARSE['DEFAULT']['GreetState'] == 'enable':
-        if CFGPARSE['DEFAULT']['GreetChannel'] != '':
-            channel = bot.get_channel(int(CFGPARSE['DEFAULT']['GreetChannel']))
+    if CFGPARSE['Settings']['AutoRoleState'] == 'enable':
+        if CFGPARSE['Settings']['AutoRoleID'] != '':
+            guild = member.guild
+            role = guild.get_role(int(CFGPARSE['Settings']['AutoRoleID']))
+            await member.add_roles(role, reason = "AutoRole")
+    if CFGPARSE['Settings']['GreetState'] == 'enable':
+        if CFGPARSE['Settings']['GreetChannelID'] != '':
+            channel = bot.get_channel(int(CFGPARSE['Settings']['GreetChannel']))
             await channel.send(f"Welcome to the server {member.mention}!")
 
 # Change the default bot prefix
@@ -131,7 +138,7 @@ async def on_member_join(member):
 async def change_prefix(context):
     author = context.message.author
     channel = context.message.channel
-    
+
     def check(reply):
         return reply.author == author and reply.channel == channel
 
@@ -143,16 +150,14 @@ async def change_prefix(context):
     except asyncio.TimeoutError:
         await channel.send("Timed out! Exiting...")
     else:
-        write_cfg(Prefix=str(newprefix.content))
+        write_cfg('Settings', Prefix=str(newprefix.content))
         bot.command_prefix = newprefix.content
         await channel.send(f"My command prefix is now \"{newprefix.content}\".")
 
 
 # Execute the Bot
-try:
-    bot.run(CFGPARSE['DEFAULT']['Token'])
-except:
-    print("Something's wrong with the token! Check the config file.")
+bot.run(CFGPARSE['Settings']['Token'])
+
 
 # messages = joined = 0 #For update_stats() fxn
 #
