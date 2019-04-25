@@ -66,8 +66,35 @@ async def hello_world(context):
     print(f"Message sent in {channel}")
     await channel.send(f"Hello {author}!")
 
+    
+# # Admin-only command to purge chunks of text
+# @bot.command(name = 'purge')
+# async def purge_text(context, num):
+#     messages = [] #empty list to put all the messages in the log
+#     number = int(num) #converting the number of messages to delete to an integer
+#     async for x in Client.logs_from(context.message.channel, limit = number)
+#         messages.append(x)
+#     await Client.delete_messages(messages)
 
-# Allow users to self-assign roles from a list
+
+# # command to self-assign a role
+# @bot.command(name = 'giveme')
+# async def assignme(self, context, role : discord.Role)
+#     user = context.message.author #get user that typed the commands
+#     error = False
+#     for srole in context.message.server.roles:
+#         if srole.name == role.name:
+#             if role.id in self.selfrole_list:
+#                 try:
+#                     await guild.add_roles(user, role)
+#                     await channel.send("You now have the " + role.name + " role.")
+#                 except discord.Forbidden:
+#                     await channel.send("There appears to be an error with setting that role.")
+#             else:
+#                 await channel.send("That is not in the list of roles you can assign yourself!")
+
+
+# Allow users to self-assign roles
 @bot.command(name = 'SetRole',
              description = ("Assigns or removes a specified role name or ID "
                             "to yourself."),
@@ -93,7 +120,8 @@ async def set_role(context, role : str):
     else:
         await channel.send("No role found! Check the name or ID entered.")
 
-# Assign a role upon joining guild
+
+# Manage a role to be assigned upon joining guild
 @bot.command(name = 'AutoRole',
              description = ("Sets a role that users get automatically upon "
                             "joining the server. Usage is `-arole set "
@@ -158,7 +186,7 @@ async def change_prefix(context, option : str):
     write_cfg('Settings', Prefix = option)
     bot.command_prefix = option
     await channel.send(f"My command prefix is now \"{option}\".")
-        
+
 
 # Error handler for prefix function
 @change_prefix.error
@@ -186,7 +214,6 @@ async def on_member_join(member):
 async def on_ready():
     print(f"{bot.user.name} is ready, user ID is {bot.user.id}")
     print("------")
-
 
 # Execute the Bot
 bot.run(CFGPARSER['Settings']['Token'])
@@ -237,4 +264,3 @@ bot.run(CFGPARSER['Settings']['Token'])
 #        if message.content.count(word)>0:
 #            print("Whoa, don't say that.")
 #            await message.channel.purge(limit = 1)
-
