@@ -9,13 +9,16 @@ from discord.ext import commands
 from discord.utils import get
 from pathlib import Path
 
+
 # Setting platform-independent path to working directory and config file
 CURRENTDIR = Path.cwd()
 CONFIG = CURRENTDIR / "init.cfg"
 
+
 # Initialize configparser settings
 CFGPARSER = configparser.ConfigParser(empty_lines_in_values = False)
 CFGPARSER.optionxform = lambda option: option
+
 
 # Set a reference of default options that must exist in config
 CFGDEFAULT = {'Token': '',
@@ -25,6 +28,7 @@ CFGDEFAULT = {'Token': '',
               'AutoRoleState': 'disable',
               'AutoRoleID': ''}
 
+
 # Function for writing to the config file
 def write_cfg(*args, **kwargs):
     args = ''.join(args)
@@ -32,6 +36,7 @@ def write_cfg(*args, **kwargs):
         CFGPARSER.set(args, key, value)
     with Path.open(CONFIG, 'w') as configfile:
         CFGPARSER.write(configfile)
+
 
 # Initialize config
 try:
@@ -48,14 +53,9 @@ finally:
     if CFGPARSER['Settings']['Token'] == '':
         write_cfg('Settings', Token = input("Enter your bot's token: "))
 
+
 # Initialize the bot and set the default command prefix
 bot = commands.Bot(command_prefix = CFGPARSER['Settings']['Prefix'])
-
-# Output info to console once bot is initialized and ready
-@bot.event
-async def on_ready():
-    print(f"{bot.user.name} is ready, user ID is {bot.user.id}")
-    print("------")
 
 
 # Testing command
@@ -66,6 +66,32 @@ async def hello_world(context):
     print(f"Message sent in {channel}")
     await channel.send(f"Hello {author}!")
 
+
+# Allow users to self-assign roles from a list
+@bot.command(name = 'SetRole',
+             description = ("Assigns or removes a specified role name or ID "
+                            "to yourself."),
+             brief = "Assign or remove role.",
+             aliases = ["srole"])
+async def set_role(context, role : str):
+    channel = context.channel
+    author = context.message.author
+    guild = context.guild
+    
+    if role.isdigit():
+        gotRole = guild.get_role(int(role))
+    else:
+        gotRole = get(guild.roles, name = role)
+
+    if gotRole is not None:
+        if gotRole not in author.roles:
+            await author.add_roles(gotRole, reason = "SetRole")
+            await channel.send(f"Gave you the \"{gotRole.name}\" role.")
+        else:
+            await author.remove_roles(gotRole, reason = "SetRole")
+            await channel.send(f"Removed your \"{gotRole.name}\" role.")
+    else:
+        await channel.send("No role found! Check the name or ID entered.")
 
 # Assign a role upon joining guild
 @bot.command(name = 'AutoRole',
@@ -79,7 +105,7 @@ async def auto_role(context, option : str, *args):
     channel = context.channel
     guild = context.guild
     args = ''.join(args)    
-    gotrole = ''
+    gotRole = ''
 
     if args == '':
         if option in ('enable', 'disable'):
@@ -91,7 +117,7 @@ async def auto_role(context, option : str, *args):
         elif option == 'set':
             await channel.send(f"You need to include a role name or ID!")
     elif args.isdigit():
-        gotRole = guild.get_role(args)
+        gotRole = guild.get_role(int(args))
     else:
         gotRole = get(guild.roles, name = args)
 
@@ -101,15 +127,6 @@ async def auto_role(context, option : str, *args):
                             "list.")
     else:
         await channel.send("No role found! Check the name or ID entered.")
-
-
-# Error handler for auto_role function
-#@auto_role.error
-#async def auto_role_error(context, error):
-#    if isinstance(error, commands.MissingRequiredArgument):
-#        await context.channel.send("You need to include a role name or ID!")
-#    if isinstance(error, commands.CommandError):
-#        await context.channel.send("Och! Something wrong! Don't worry \;\)")
 
 
 # Set the greet channel
@@ -130,6 +147,26 @@ async def change_greet(context, *args):
         await channel.send(f"The greet message is now {args}d!")
 
 
+# Change the default bot prefix
+@bot.command(name = 'ChangePrefix',
+             description = ("Changes the default bot command prefix. Usage is "
+                            "\`{bot.command_prefix}prefix \(New prefix\)\`."),
+             brief = "Change bot prefix",
+             aliases = ['prefix'])
+async def change_prefix(context, option : str):
+    channel = context.channel
+    write_cfg('Settings', Prefix = option)
+    bot.command_prefix = option
+    await channel.send(f"My command prefix is now \"{option}\".")
+        
+
+# Error handler for prefix function
+@change_prefix.error
+async def change_prefix_error(context, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        await context.channel.send("You have to specify a new prefix!")
+
+
 # Do stuff to new users upon joining guild
 @bot.event
 async def on_member_join(member):
@@ -143,34 +180,25 @@ async def on_member_join(member):
             channel = bot.get_channel(int(CFGPARSER['Settings']['GreetChannel']))
             await channel.send(f"Welcome to the server {member.mention}!")
 
-# Change the default bot prefix
-@bot.command(name = 'ChangePrefix',
-             description = ("Changes the default bot command prefix. "
-                            "Default prefix is set in init.cfg."),
-             brief = "Change bot prefix",
-             aliases = ['prefix'])
-async def change_prefix(context):
-    author = context.message.author
-    channel = context.message.channel
 
-    def check(reply):
-        return reply.author == author and reply.channel == channel
-
-    await channel.send("What prefix would you like me to respond to? "
-                       "\[Auto timeout in 10 seconds.\]")
-
-    try:
-        newprefix = await bot.wait_for('message', check=check, timeout=10.0)
-    except asyncio.TimeoutError:
-        await channel.send("Timed out! Exiting...")
-    else:
-        write_cfg('Settings', Prefix=str(newprefix.content))
-        bot.command_prefix = newprefix.content
-        await channel.send(f"My command prefix is now \"{newprefix.content}\".")
+# Output info to console once bot is initialized and ready
+@bot.event
+async def on_ready():
+    print(f"{bot.user.name} is ready, user ID is {bot.user.id}")
+    print("------")
 
 
 # Execute the Bot
 bot.run(CFGPARSER['Settings']['Token'])
+
+
+# Error handler for auto_role function
+#@auto_role.error
+#async def auto_role_error(context, error):
+#    if isinstance(error, commands.MissingRequiredArgument):
+#        await context.channel.send("You need to include a role name or ID!")
+#    if isinstance(error, commands.CommandError):
+#        await context.channel.send("Och! Something wrong! Don't worry \;\)")
 
 
 # messages = joined = 0 #For update_stats() fxn
