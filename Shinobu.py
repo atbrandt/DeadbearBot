@@ -11,8 +11,7 @@ from pathlib import Path
 
 
 # Setting platform-independent path to working directory and config file
-CURRENTDIR = Path.cwd()
-CONFIG = CURRENTDIR / "init.cfg"
+CONFIG = Path.cwd() / "init.cfg"
 
 
 # Initialize configparser settings
