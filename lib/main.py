@@ -8,7 +8,9 @@ import configparser
 from discord.ext import commands
 from discord.utils import get
 from pathlib import Path
+from db import setupDatabase, getItemByName
 
+setupDatabase()
 
 # Setting platform-independent path to working directory and config file
 CONFIG = Path.cwd() / "init.cfg"
@@ -62,8 +64,17 @@ bot = commands.Bot(command_prefix = CFGPARSER['Settings']['Prefix'])
 async def hello_world(context):
     channel = context.channel
     author = context.author
-    print(f"Message sent in {channel}")
+    print(f"Message sent in {channel} from {author.id}")
     await channel.send(f"Hello {author}!")
+
+@bot.command(name = 'describe')
+async def describe_item(context, itemName: str):
+    channel = context.channel
+    item = getItemByName(itemName)
+    if(item is not None):
+        await channel.send(item['description'])
+    else:
+        await channel.send(f"Item not found")
 
     
 # # Admin-only command to purge chunks of text
