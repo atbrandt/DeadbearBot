@@ -2,6 +2,10 @@ import sqlite3
 db = sqlite3.connect('bot.db')
 
 def setupDatabase():
+    # Makes the database return rows as dictionaries instead of tuples
+    # See: https://stackoverflow.com/questions/3300464/how-can-i-get-dict-from-sqlite-query
+    db.row_factory = dict_factory
+
     c = db.cursor()
 
     # Create tables if they don't exist
@@ -50,7 +54,7 @@ def createItem(name, description=""):
 def getAllItems():
     c = db.cursor()
     c.execute("SELECT * FROM items")
-    return list(map(parseItemRow, c.fetchall()))
+    return c.fetchall()
 
 # Finds an item by its name and returns it
 def getItemByName(name):
@@ -62,7 +66,7 @@ def getItemByName(name):
     row = c.fetchone()
     if(row is None):
         return None
-    return parseItemRow(row)
+    return row
 
 # Gives an item to a user
 def giveUserItem(userId, itemId):
@@ -72,12 +76,9 @@ def giveUserItem(userId, itemId):
     )
     db.commit()
 
-# Converts an item tuple into a dictionary (so you don't have to remember the indexes)
-def parseItemRow(row):
-    if row is None:
-        return None
-    return {
-        'id': row[0],
-        'name': row[1],
-        'description': row[2]
-    }
+
+def dict_factory(cursor, row):
+    d = {}
+    for idx, col in enumerate(cursor.description):
+        d[col[0]] = row[idx]
+    return d
