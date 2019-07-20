@@ -68,9 +68,8 @@ async def hello_world(context):
     await channel.send(f"Hello {author}!")
 
 @bot.command(name = 'describe')
-async def describe_item(context):
+async def describe_item(context, itemName: str):
     channel = context.channel
-    itemName = context.message.content.replace("-describe ", "")
     item = getItemByName(itemName)
     if(item is not None):
         await channel.send(item['description'])
