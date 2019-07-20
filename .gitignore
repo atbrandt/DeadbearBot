@@ -24,7 +24,8 @@
 ######################
 *.log
 *.sql
-.sqlite
+*.sqlite
+*.db
 
 # OS generated files #
 ######################
@@ -35,6 +36,7 @@
 .Trashes
 ehthumbs.db
 Thumbs.db
+__pycache__
 
 # Files needed for operation #
 ######################
