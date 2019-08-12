@@ -1,5 +1,7 @@
 import sqlite3
-db = sqlite3.connect('bot.db')
+from pathlib import Path
+
+db = sqlite3.connect(Path(__file__).parent / "bot.db")
 
 def setupDatabase():
     # Makes the database return rows as dictionaries instead of tuples
@@ -9,6 +11,14 @@ def setupDatabase():
     c = db.cursor()
 
     # Create tables if they don't exist
+    c.execute('''
+    CREATE TABLE IF NOT EXISTS reaction_roles (
+        id INTEGER PRIMARY KEY,
+        roleID INTEGER UNIQUE,
+        emoji TEXT UNIQUE
+    )
+    ''')
+
     c.execute('''
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY,
@@ -76,6 +86,27 @@ def giveUserItem(userId, itemId):
     )
     db.commit()
 
+# Returns all reaction roles
+def getAllRRs():
+    c = db.cursor()
+    c.execute("SELECT * FROM reaction_roles")
+    return c.fetchall()
+
+# Adds a reaction role to database
+def addRR(roleID, emoji):
+    db.cursor().execute(
+        "INSERT INTO reaction_roles (roleID, emoji) VALUES (?, ?)",
+        (roleID, emoji,)
+    )
+    db.commit()
+
+# Removes a reaction role from database
+def removeRR(id):
+    db.cursor().execute(
+        "DELETE FROM reaction_roles WHERE id=?",
+        (id,)
+    )
+    db.commit()
 
 def dict_factory(cursor, row):
     d = {}
