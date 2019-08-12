@@ -5,10 +5,11 @@ import discord
 import asyncio
 import aiohttp
 import configparser
+import db
+import re
 from discord.ext import commands
 from discord.utils import get
 from pathlib import Path
-from db import setupDatabase, getItemByName, getAllRRs, addRR, removeRR
 
 
 # Setting platform-independent path to working directory and config file
@@ -23,12 +24,12 @@ CFGPARSER.optionxform = lambda option: option
 # Set a reference of default options that must exist in config
 CFGDEFAULT = {'Token': '',
               'Prefix': '-',
-              'GreetState': 'disable',
-              'GreetChannelID': '',
-              'AutoRoleState': 'disable',
               'AutoRoleID': '',
               'ReactMessageID': '',
-              'ReactChannelID': ''}
+              'ReactChannelID': '',
+              'GreetChannelID': '',
+              'GreetMessage': ''
+             }
 
 
 # Function for writing to the config file
@@ -110,21 +111,14 @@ async def set_role(ctx, role):
              brief = "Modify auto-role settings.",
              aliases = ["arole"])
 async def auto_role(ctx, option, *args):
-    role = ''.join(args)
+    role = ' '.join(args)
 
     if role.isdigit():
         gotRole = ctx.guild.get_role(int(role))
     else:
         gotRole = get(ctx.guild.roles, name = role)
 
-    if option in ('enable', 'disable'):
-        write_cfg('Settings', AutoRoleState = option)
-        await ctx.channel.send(f"The auto-role is now {option}d!")
-    elif option == 'clear':
-        write_cfg('Settings', AutoRoleID = '')
-        write_cfg('Settings', AutoRoleState = 'disable')
-        await ctx.channel.send(f"The auto-roles are now {option}ed!")
-    elif option == 'set':
+    if option == 'set':
         if gotRole is not None:
             write_cfg('Settings', AutoRoleID = str(gotRole.id))
             await ctx.channel.send(f"Added \"{gotRole.name}\" the auto-role "
@@ -132,24 +126,30 @@ async def auto_role(ctx, option, *args):
         else:
             await ctx.channel.send("No role found! Check the name or ID "
                                    "entered.")
+    elif option == 'clear':
+        write_cfg('Settings', AutoRoleID = '')
+        await ctx.channel.send("The auto-role is now cleared.")
 
 
 # Set the greet channel
-@bot.command(name = 'ChangeGreet',
-             description = ("Sets the current channel for greet messages. "
-                            "Pass \"enable\" or \"disable\" to turn "
-                            "the greet message on or off."),
+@bot.command(name = 'SetGreet',
+             description = ("Configures the automatic greeting message when users "
+                            "join the server. Pass \"enable\" or \"disable\" to "
+                            "turn the greet message on or off."),
              brief = "Modify greet message settings.",
              aliases = ["greet"])
 async def change_greet(ctx, *args):
-    greetmsg = ''.join(args)
+    greetmsg = ' '.join(args)
 
-    if greetmsg == '':
+    if greetmsg == 'enable':
         write_cfg('Settings', GreetChannelID = str(ctx.channel.id))
-        await ctx.channel.send(f"Set {ctx.channel} as the greeting channel.")
-    elif greetmsg in ('enable', 'disable'):
-        write_cfg('Settings', GreetState = greetmsg)
-        await ctx.channel.send(f"The greet message is now {greetmsg}d!")
+        await ctx.channel.send(f"Greetings enabled in \"{ctx.channel}\".")        
+    elif greetmsg == 'disable':
+        write_cfg('Settings', GreetChannelID = '')
+        await ctx.channel.send("Greetings disabled.")
+    elif greetmsg is not '':
+        write_cfg('Settings', GreetMessage = greetmsg)
+        await ctx.channel.send("Set that as the greet message.")
 
 
 # Change the default bot prefix
@@ -192,7 +192,8 @@ async def rr_msg_set(ctx, targetChannel, targetMessage):
              brief = "Create a reaction role",
              aliases = ['rr'])
 async def rr_create(ctx, emoji, *args):
-    role = ''.join(args)
+    role = ' '.join(args)
+    emojiID = re.sub('(<|>|:.*?:)','',emoji)
     
     if CFGPARSER['Settings']['ReactMessageID'] != '':
         messageID = int(CFGPARSER['Settings']['ReactMessageID'])
@@ -208,8 +209,8 @@ async def rr_create(ctx, emoji, *args):
                 gotRole = get(ctx.guild.roles, name = role)
 
             if gotRole is not None:
-                addRR(gotRole.id, emoji)
-                await gotMsg.add_reaction(emoji)
+                db.addRR(emoji, gotRole.id)
+                await gotMsg.add_reaction(emojiID)
                 await ctx.channel.send(f"Set the \"{emoji}\" to give the "
                                        f"{gotRole.name} role.")
             else:
@@ -226,7 +227,7 @@ async def rr_create(ctx, emoji, *args):
              aliases = ['rrdel'])
 async def rr_delete(ctx, id):
     if id.isdigit():
-        removeRR(id)
+        db.removeRR(id)
         await ctx.channel.send("Removed that entry.")
     else:
         await ctx.channel.send("You must give the ID of the entry to remove.")
@@ -238,7 +239,7 @@ async def rr_delete(ctx, id):
              brief = "List reaction roles",
              aliases = ['rrlist'])
 async def rr_list(ctx):    
-    await ctx.channel.send(getAllRRs())
+    await ctx.channel.send(db.getAllRR())
 
 
 # Get list of roles (with IDs) on guild
@@ -272,7 +273,7 @@ async def get_channels(ctx):
 @bot.event
 async def on_raw_reaction_add(payload):
     if payload.message_id == int(CFGPARSER['Settings']['ReactMessageID']):
-        rrlist = getAllRRs()
+        rrlist = db.getAllRR()
         emoji = str(payload.emoji)
         gotRR = next((item for item in rrlist if item['emoji'] == emoji), None)
         if gotRR is not None:
@@ -287,7 +288,7 @@ async def on_raw_reaction_add(payload):
 @bot.event
 async def on_raw_reaction_remove(payload):
     if payload.message_id == int(CFGPARSER['Settings']['ReactMessageID']):
-        rrlist = getAllRRs()
+        rrlist = db.getAllRR()
         emoji = str(payload.emoji)
         gotRR = next((item for item in rrlist if item['emoji'] == emoji), None)
         if gotRR is not None:
@@ -301,15 +302,13 @@ async def on_raw_reaction_remove(payload):
 # Do stuff to new users upon joining guild
 @bot.event
 async def on_member_join(member):
-    if (CFGPARSER['Settings']['AutoRoleState'] == 'enable'
-        and CFGPARSER['Settings']['AutoRoleID'] != ''):
+    if CFGPARSER['Settings']['AutoRoleID'] != '':
         guild = member.guild
         role = guild.get_role(int(CFGPARSER['Settings']['AutoRoleID']))
         await member.add_roles(role, reason = "AutoRole")
-    if (CFGPARSER['Settings']['GreetState'] == 'enable'
-        and CFGPARSER['Settings']['GreetChannelID'] != ''):
+    if CFGPARSER['Settings']['GreetChannelID'] != '':
         channel = bot.get_channel(int(CFGPARSER['Settings']['GreetChannel']))
-        await channel.send(f"Welcome to the server {member.mention}!")
+        await channel.send(CFGPARSER['Settings']['GreetMessage'])
 
 
 # Output info to console once bot is initialized and ready
@@ -320,7 +319,7 @@ async def on_ready():
 
 
 # Execute the Bot
-setupDatabase()
+db.setupDatabase()
 bot.run(CFGPARSER['Settings']['Token'])
 
 

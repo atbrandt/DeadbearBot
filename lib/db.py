@@ -1,7 +1,9 @@
 import sqlite3
 from pathlib import Path
 
-db = sqlite3.connect(Path(__file__).parent / "bot.db")
+DATABASE = str(Path(__file__).parent / "bot.db")
+
+db = sqlite3.connect(DATABASE)
 
 def setupDatabase():
     # Makes the database return rows as dictionaries instead of tuples
@@ -14,8 +16,16 @@ def setupDatabase():
     c.execute('''
     CREATE TABLE IF NOT EXISTS reaction_roles (
         id INTEGER PRIMARY KEY,
-        roleID INTEGER UNIQUE,
-        emoji TEXT UNIQUE
+        emoji TEXT UNIQUE,
+        roleID INTEGER
+    )
+    ''')
+
+    c.execute('''
+    CREATE TABLE IF NOT EXISTS voice_roles (
+        id INTEGER PRIMARY KEY,
+        voiceChannelID TEXT UNIQUE,
+        roleID INTEGER
     )
     ''')
 
@@ -87,16 +97,16 @@ def giveUserItem(userId, itemId):
     db.commit()
 
 # Returns all reaction roles
-def getAllRRs():
+def getAllRR():
     c = db.cursor()
     c.execute("SELECT * FROM reaction_roles")
     return c.fetchall()
 
 # Adds a reaction role to database
-def addRR(roleID, emoji):
+def addRR(emoji, roleID):
     db.cursor().execute(
-        "INSERT INTO reaction_roles (roleID, emoji) VALUES (?, ?)",
-        (roleID, emoji,)
+        "INSERT INTO reaction_roles (emoji, roleID) VALUES (?, ?)",
+        (emoji, roleID,)
     )
     db.commit()
 
@@ -107,6 +117,29 @@ def removeRR(id):
         (id,)
     )
     db.commit()
+
+# Returns all voice chat roles
+def getAllVCR():
+    c = db.cursor()
+    c.execute("SELECT * FROM voice_roles")
+    return c.fetchall()
+
+# Adds a voice chat role to database
+def addVCR(vcID, roleID):
+    db.cursor().execute(
+        "INSERT INTO voice_roles (voiceChannelID, roleID) VALUES (?, ?)",
+        (vcID, roleID,)
+    )
+    db.commit()
+
+# Removes a voice chat role from database
+def removeVCR(id):
+    db.cursor().execute(
+        "DELETE FROM voice_roles WHERE id=?",
+        (id,)
+    )
+    db.commit()    
+
 
 def dict_factory(cursor, row):
     d = {}
