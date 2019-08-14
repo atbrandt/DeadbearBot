@@ -77,11 +77,11 @@ async def hello_world(ctx):
 
 # Describe item by name in database
 @bot.command(name='describe')
-async def describe_item(ctx, itemName: str):
-    item = getItemByName(itemName)
+async def describe_item(ctx, item):
+    gotItem = get_item(item)
 
-    if(item is not None):
-        await ctx.channel.send(item['description'])
+    if item is not None:
+        await ctx.channel.send(gotItem['description'])
     else:
         await ctx.channel.send(f"Item not found")
 
@@ -135,18 +135,17 @@ async def set_role(ctx, role):
                           " \"disable\" to turn the auto-role on or off."),
              brief="Modify auto-role settings.",
              aliases=["arole"])
-async def auto_role(ctx, option, *args):
+async def auto_role(ctx, *role):
     if not check_perms(ctx.author.id):
         await ctx.channel.send("YOU LACK PERMISSION")
         return
-    role = ' '.join(args)
+    if role:
+        role = role[0]
+        if role.isdigit():
+            gotRole = ctx.guild.get_role(int(role))
+        else:
+            gotRole = get(ctx.guild.roles, name=role)
 
-    if role.isdigit():
-        gotRole = ctx.guild.get_role(int(role))
-    else:
-        gotRole = get(ctx.guild.roles, name=role)
-
-    if option == 'set':
         if gotRole is not None:
             write_cfg('Settings', AutoRoleID=str(gotRole.id))
             await ctx.channel.send(f"Added \"{gotRole.name}\" the auto-role "
@@ -154,75 +153,87 @@ async def auto_role(ctx, option, *args):
         else:
             await ctx.channel.send("No role found! Check the name or ID "
                                    "entered.")
-    elif option == 'clear':
+    else:
         write_cfg('Settings', AutoRoleID='')
         await ctx.channel.send("The auto-role is now cleared.")
 
 
 # Set the greet channel
-@bot.command(name='SetGreet',
+@bot.command(name='GuildGreet',
              description=("Configures the automatic greeting message when "
-                          "users join the server. Pass \"enable\" or "
-                          "\"disable\" to turn the greet message on or off."),
+                          "users join the server."),
              brief="Modify greet message settings.",
-             aliases=["greet"])
-async def change_greet(ctx, *args):
+             aliases=["gg"])
+async def guild_greet(ctx):
     if not check_perms(ctx.author.id):
         await ctx.channel.send("YOU LACK PERMISSION")
         return
-    greetmsg = ' '.join(args)
 
-    if greetmsg == 'enable':
+    if CFGPARSER['Settings']['GreetChannelID'] == '':
         write_cfg('Settings', GreetChannelID=str(ctx.channel.id))
-        await ctx.channel.send(f"Greetings enabled in \"{ctx.channel}\".")
-    elif greetmsg == 'disable':
+        await ctx.channel.send(f"Greeting enabled in \"{ctx.channel}\".")
+    elif CFGPARSER['Settings']['GreetChannelID'] == str(ctx.channel.id):
         write_cfg('Settings', GreetChannelID='')
-        await ctx.channel.send("Greetings disabled.")
-    elif greetmsg is not '':
-        write_cfg('Settings', GreetMessage=greetmsg)
-        await ctx.channel.send("Set that as the greet message.")
+        await ctx.channel.send("Greeting disabled.")
+    else:
+        await ctx.channel.send(f"Disable the greeting by running this command "
+                               "in {CFGPARSER['Settings']['GreetChannelID']}.")
+
+
+# Set the greet channel
+@bot.command(name='GuildGreetMessage',
+             description=("Sets the automatic greeting message."),
+             brief="Modify greet message.",
+             aliases=["ggmsg"])
+async def guild_greet_message(ctx, message):
+    if not check_perms(ctx.author.id):
+        await ctx.channel.send("YOU LACK PERMISSION")
+        return
+
+    write_cfg('Settings', GreetMessage=message)
+    message = format(CFGPARSER['Settings']['GreetMessage'])
+    await ctx.channel.send(f"The greet message is now {message}")
 
 
 # Command to set a message as a hook for reaction roles
-@bot.command(name='ReactRoleMessage',
+@bot.command(name='ReactionRoleHook',
              description=("Sets a given message in a given channel as a "
-                          "source hook for react roles."),
-             brief="Set ReactRoles Message",
+                          "source hook for reaction roles."),
+             brief="Set reaction roles hook",
              aliases=['rrhook'])
-async def rr_hook_set(ctx, targetChannel, targetMessage):
+async def add_rr_hook(ctx, channelID: int, messageID: int):
     if not check_perms(ctx.author.id):
         await ctx.channel.send("YOU LACK PERMISSION")
         return
-
-    channelID = int(targetChannel)
-    messageID = int(targetMessage)
 
     try:
         await bot.get_channel(channelID).fetch_message(messageID)
     except NotFound:
-        await ctx.channel.send("No message found! Check the IDs and make "
-                               "sure I have access to the right channel.")
+        await ctx.channel.send("""No message found! Check the IDs and make 
+                               sure I have access to the right channel.""")
     else:
-        db.addRRHooks(channelID, messageID)
-        await ctx.channel.send("Set that message as the react role hook!")
+        rrhookID = db.add_reaction_role_hook(channelID, messageID)
+        await ctx.channel.send(f"""Set message as a reaction role hook. 
+                               ID = {rrhookID}""")
 
 
 # Command to set a reaction role
-@bot.command(name='ReactRole',
+@bot.command(name='ReactionRole',
              description=("Adds a reaction role using a given emoji and role "
                           "id."),
              brief="Create a reaction role",
              aliases=['rr'])
-async def rr_create(ctx, emoji, *args):
+async def add_rr(ctx, messageID: int, emoji, role):
     if not check_perms(ctx.author.id):
         await ctx.channel.send("YOU LACK PERMISSION")
         return
-    role = ' '.join(args)
     emojiID = re.sub('(<|>|:.*?:)', '', emoji)
-
-    if CFGPARSER['Settings']['ReactMessageID'] != '':
-        messageID = int(CFGPARSER['Settings']['ReactMessageID'])
-        channelID = int(CFGPARSER['Settings']['ReactChannelID'])
+    print(messageID)
+    messageHook = db.get_hook_by_message(messageID)
+    
+    if messageHook is not None:
+        messageID = int(messageHook['message_id'])
+        channelID = int(messageHook['channel_id'])
         try:
             gotMsg = await bot.get_channel(channelID).fetch_message(messageID)
         except NotFound:
@@ -234,29 +245,29 @@ async def rr_create(ctx, emoji, *args):
                 gotRole = get(ctx.guild.roles, name=role)
 
             if gotRole is not None:
-                db.addRR(emoji, gotRole.id)
+                rrID = db.add_reaction_role(emoji, gotRole.id, hookID)
                 await gotMsg.add_reaction(emojiID)
-                await ctx.channel.send(f"Set the \"{emoji}\" to give the "
-                                       f"{gotRole.name} role.")
+                await ctx.channel.send(f"""Set the \"{emoji}\" to give the "
+                                       {gotRole.name} role. ID = {rrID}""")
             else:
                 await ctx.channel.send("No role found! Check the name or ID "
                                        "entered.")
     else:
-        await ctx.channel.send("You need to configure the 'rrhook' first!")
+        await ctx.channel.send("You need to configure a 'rrhook' first!")
 
 
 # Command to delete a reaction role
-@bot.command(name='DeleteReactRole',
+@bot.command(name='DeleteReactionRole',
              description=("Removes a reaction role by its ID."),
              brief="Remove a reaction role",
              aliases=['rrdel'])
-async def rr_delete(ctx, id):
+async def delete_rr(ctx, rrID):
     if not check_perms(ctx.author.id):
         await ctx.channel.send("YOU LACK PERMISSION")
         return
-    if id.isdigit():
-        db.removeRR(id)
-        await ctx.channel.send("Removed that entry.")
+    if rrID.isdigit():
+        db.delete_reaction_role(rrID)
+        await ctx.channel.send(f"Removed that entry.")
     else:
         await ctx.channel.send("You must give the ID of the entry to remove.")
 
@@ -266,11 +277,11 @@ async def rr_delete(ctx, id):
              description=("Lists all reaction roles in database."),
              brief="List reaction roles",
              aliases=['rrlist'])
-async def rr_list(ctx):
+async def list_rr(ctx):
     if not check_perms(ctx.author.id):
         await ctx.channel.send("YOU LACK PERMISSION")
         return
-    await ctx.channel.send(db.getAllRR())
+    await ctx.channel.send(db.get_all_reaction_roles())
 
 
 # Command to add a voice chat role
@@ -279,12 +290,11 @@ async def rr_list(ctx):
                           "joins a specified voice channel."),
              brief="Add voice chat role",
              aliases=['vcr'])
-async def vcr_create(ctx, vcid, *args):
+async def add_vcr(ctx, vchannelID, role):
     if not check_perms(ctx.author.id):
         await ctx.channel.send("YOU LACK PERMISSION")
         return
-    role = ' '.join(args)
-    gotChannel = bot.get_channel(int(vcid))
+    gotChannel = bot.get_channel(int(vchannelID))
 
     if role.isdigit():
         gotRole = ctx.guild.get_role(int(role))
@@ -292,7 +302,7 @@ async def vcr_create(ctx, vcid, *args):
         gotRole = get(ctx.guild.roles, name=role)
 
     if gotRole is not None and gotChannel is not None:
-        db.addVCR(gotChannel.id, gotRole.id)
+        db.add_voice_channel_role(gotChannel.id, gotRole.id)
         await ctx.channel.send(f"Users joining {gotChannel.name} channel will "
                                f"automatically get the {gotRole.name} role.")
     else:
@@ -304,12 +314,12 @@ async def vcr_create(ctx, vcid, *args):
              description=("Removes a voice chat role by its ID."),
              brief="Remove a vc role",
              aliases=['vcrdel'])
-async def vcr_delete(ctx, id):
+async def delete_vcr(ctx, vcrID):
     if not check_perms(ctx.author.id):
         await ctx.channel.send("YOU LACK PERMISSION")
         return
-    if id.isdigit():
-        db.removeVCR(id)
+    if vcrID.isdigit():
+        db.delete_voice_channel_role(vcrID)
         await ctx.channel.send("Removed that entry.")
     else:
         await ctx.channel.send("You must give the ID of the entry to remove.")
@@ -320,11 +330,11 @@ async def vcr_delete(ctx, id):
              description=("Lists all voice chat roles in database."),
              brief="List voice chat roles",
              aliases=['vcrlist'])
-async def vcr_list(ctx):
+async def list_vcr(ctx):
     if not check_perms(ctx.author.id):
         await ctx.channel.send("YOU LACK PERMISSION")
         return
-    await ctx.channel.send(db.getAllVCR())
+    await ctx.channel.send(db.get_all_voice_channel_roles())
 
 
 # Get list of roles (with IDs) on guild
@@ -366,14 +376,16 @@ async def get_channels(ctx):
 # Reaction Role hook function
 @bot.event
 async def on_raw_reaction_add(payload):
-    if payload.message_id == int(CFGPARSER['Settings']['ReactMessageID']):
-        rrlist = db.getAllRR()
+    rrHookList = db.get_all_hooks()
+    print(rrHookList)
+    if payload.message_id == int(rrHookList['message_id']):
         emoji = str(payload.emoji)
-        gotRR = next((item for item in rrlist if item['emoji'] == emoji), None)
+        gotRR = db.get_reaction_roles_by_hook(rrhooklist['id'], emoji)
+        print(gotRR)
         if gotRR is not None:
             guild = bot.get_guild(payload.guild_id)
             member = guild.get_member(payload.user_id)
-            gotRole = guild.get_role(gotRR['roleID'])
+            gotRole = guild.get_role(gotRR['role_id'])
             if gotRole not in member.roles:
                 await member.add_roles(gotRole, reason="ReactionRole")
 
@@ -381,10 +393,10 @@ async def on_raw_reaction_add(payload):
 # Reaction Role hook function
 @bot.event
 async def on_raw_reaction_remove(payload):
-    if payload.message_id == int(CFGPARSER['Settings']['ReactMessageID']):
-        rrlist = db.getAllRR()
+    rrHookList = db.get_all_hooks()
+    if payload.message_id == int(rrHookList['message_id']):
         emoji = str(payload.emoji)
-        gotRR = next((item for item in rrlist if item['emoji'] == emoji), None)
+        gotRR = db.get_reaction_roles_by_hook(rrhooklist['id'], emoji)
         if gotRR is not None:
             guild = bot.get_guild(payload.guild_id)
             member = guild.get_member(payload.user_id)
@@ -397,17 +409,13 @@ async def on_raw_reaction_remove(payload):
 @bot.event
 async def on_voice_state_update(member, before, after):
     if before.channel is not None:
-        vcrlist = db.getAllVCR()
-        vcLeft = before.channel.id
-        gotVCR = next((item for item in vcrlist if item['vcID'] == vcLeft), None)
+        gotVCR = db.get_voice_channel_role(before.channel.id)
         if gotVCR is not None:
             guild = bot.get_guild(before.channel.guild.id)
             gotRole = guild.get_role(gotVCR['roleID'])
             await member.remove_roles(gotRole, reason="VCRLeave")
     if after.channel is not None:
-        vcrlist = db.getAllVCR()
-        vcJoin = after.channel.id
-        gotVCR = next((item for item in vcrlist if item['vcID'] == vcJoin), None)
+        gotVCR = db.get_voice_channel_role(after.channel.id)
         if gotVCR is not None:
             guild = bot.get_guild(after.channel.guild.id)
             gotRole = guild.get_role(gotVCR['roleID'])
