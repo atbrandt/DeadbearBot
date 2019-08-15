@@ -22,8 +22,6 @@ CFGPARSER.optionxform = lambda option: option
 CFGDEFAULT = {'Token': '',
               'Prefix': '-',
               'AutoRoleID': '',
-              'ReactChannelID': '',
-              'ReactMessageID': '',
               'GreetChannelID': '',
               'GreetMessage': '',
               'LeaveChannelID': '',
@@ -59,7 +57,7 @@ finally:
 bot = commands.Bot(command_prefix=CFGPARSER['Settings']['Prefix'])
 
 
-# Set up converter shorthands. These must be await'd
+# Set up converter shorthands. These must be awaited
 convMember = commands.MemberConverter()
 convMessage = commands.MessageConverter()
 convUser = commands.UserConverter()
@@ -107,9 +105,6 @@ async def describe_item(ctx, item):
              aliases=['prefix'])
 @commands.is_owner()
 async def change_prefix(ctx, option):
-    if not check_perms(ctx.author.id):
-        await ctx.channel.send("YOU LACK PERMISSION")
-        return
     write_cfg('Settings', Prefix=option)
     bot.command_prefix = option
     await ctx.channel.send(f"My command prefix is now \"{option}\".")
@@ -143,7 +138,7 @@ async def set_role(ctx, role: discord.Role):
 @commands.is_owner()
 async def auto_role(ctx, *role):
     if role:
-        role = await discord.Role(role[0])
+        role = await convRole.convert(ctx, role[0])
         write_cfg('Settings', AutoRoleID=str(role.id))
         await ctx.channel.send(f"Added \"{role.name}\" the auto-role list.")
 # ctx.channel.send("No role found! Check the name or ID entered.")
@@ -220,14 +215,39 @@ async def guild_farewell_message(ctx, message):
 @bot.command(name='ReactionRoleHook',
              description=("Sets a given message in a given channel as a "
                           "source hook for reaction roles."),
-             brief="Set reaction roles hook",
+             brief="Set reaction role hook",
              aliases=['rrhook'])
 @commands.is_owner()
 async def add_rr_hook(ctx, message):
-# ctx.channel.send("No message found! Check the ID and make sure
-# I have access to the right channel.")
+    # ctx.channel.send("No message found! Check the ID and make sure
+    # I have access to the right channel.")
     rrhookID = db.add_reaction_role_hook(message)
-    await ctx.channel.send(f"Added a reaction role hook, ID = {rrhookID}")
+    await ctx.channel.send(f"Added a reaction role hook. ID = {rrhookID}")
+
+
+# Command to delete a message hook for reaction roles
+@bot.command(name='DeleteReactionRoleHook',
+             description=("Deletes a reaction role hook by its id."),
+             brief="Delete reaction role hook",
+             aliases=['delrrhook'])
+@commands.is_owner()
+async def delete_rr_hook(ctx, hookID):
+    if hookID.isdigit():
+        db.delete_reaction_role_hook(hookID)
+        await ctx.channel.send(f"Removed reaction role entry {hookID}.")
+    else:
+        await ctx.channel.send("You must give the ID of the entry to remove.")
+
+
+# Command to list all reaction role hooks
+@bot.command(name='ListReactRoleHooks',
+             description=("Lists all reaction role hooks in database."),
+             brief="List reaction roles",
+             aliases=['listrrhook'])
+@commands.is_owner()
+async def list_rr_hook(ctx):
+    hookList = db.get_all_hooks()
+    await ctx.channel.send(hookList)
 
 
 # Command to set a reaction role
@@ -237,15 +257,16 @@ async def add_rr_hook(ctx, message):
              brief="Create a reaction role",
              aliases=['rr'])
 @commands.is_owner()
-async def add_rr(ctx, hookID, emoji: discord.PartialEmoji, role: discord.Role):
+async def add_rr(ctx, hookID, emoji, role: discord.Role):
     rrHook = db.get_hook_by_id(hookID)
     if rrHook is not None:
         message = await convMessage.convert(ctx, rrHook['channel_message_id'])
 # ctx.channel.send("Can't find the reaction role hook!")
-        if emoji.is_custom_emoji():
-            rrID = db.add_reaction_role(str(emoji.id), role.id, rrHook['id'])            
+        if "<" in emoji:
+            emoji = await convEmoji.convert(ctx, emoji)
+            rrID = db.add_reaction_role(str(emoji.id), role.id, rrHook['id'])
         else:
-            rrID = db.add_reaction_role(emoji.name, role.id, rrHook['id'])
+            rrID = db.add_reaction_role(emoji, role.id, rrHook['id'])
         await message.add_reaction(emoji)
         await ctx.channel.send(f"Set the \"{emoji}\" to give the {role.name} "
                                f"role. ID = {rrID}")
@@ -258,7 +279,7 @@ async def add_rr(ctx, hookID, emoji: discord.PartialEmoji, role: discord.Role):
 @bot.command(name='DeleteReactionRole',
              description=("Removes a reaction role by its ID."),
              brief="Remove a reaction role",
-             aliases=['rrdel'])
+             aliases=['delrr'])
 @commands.is_owner()
 async def delete_rr(ctx, rrID):
     if rrID.isdigit():
@@ -272,7 +293,7 @@ async def delete_rr(ctx, rrID):
 @bot.command(name='ListReactRoles',
              description=("Lists all reaction roles in database."),
              brief="List reaction roles",
-             aliases=['rrlist'])
+             aliases=['listrr'])
 @commands.is_owner()
 async def list_rr(ctx):
     rrList = db.get_all_reaction_roles()
@@ -297,7 +318,7 @@ async def add_vcr(ctx, vchannel: discord.VoiceChannel, role: discord.Role):
 @bot.command(name='DeleteVoiceChatRole',
              description=("Removes a voice chat role by its ID."),
              brief="Remove a vc role",
-             aliases=['vcrdel'])
+             aliases=['delvcr'])
 @commands.is_owner()
 async def delete_vcr(ctx, vcrID):
     if vcrID.isdigit():
@@ -311,7 +332,7 @@ async def delete_vcr(ctx, vcrID):
 @bot.command(name='ListVoiceChatRoles',
              description=("Lists all voice chat roles in database."),
              brief="List voice chat roles",
-             aliases=['vcrlist'])
+             aliases=['listvcr'])
 @commands.is_owner()
 async def list_vcr(ctx):
     vcrList = db.get_all_voice_channel_roles()
@@ -352,7 +373,7 @@ async def get_channels(ctx):
 @bot.event
 async def on_raw_reaction_add(payload):
     if payload.user_id != bot.user.id:
-        chnlmsgID = '-'.join(payload.channel_id, payload.message_id)
+        chnlmsgID = str(payload.channel_id) + "-" + str(payload.message_id)
         rrHook = db.get_hook_by_message(chnlmsgID)
     else:
         return
@@ -406,14 +427,12 @@ async def on_voice_state_update(member, before, after):
     if before.channel is not None:
         gotVCR = db.get_voice_channel_role(before.channel.id)
         if gotVCR is not None:
-            guild = bot.get_guild(before.channel.guild.id)
-            role = guild.get_role(gotVCR['role_id'])
+            role = member.guild.get_role(gotVCR['role_id'])
             await member.remove_roles(role, reason="VCRLeave")
     if after.channel is not None:
         gotVCR = db.get_voice_channel_role(after.channel.id)
         if gotVCR is not None:
-            guild = bot.get_guild(before.channel.guild.id)
-            role = guild.get_role(gotVCR['role_id'])
+            role = member.guild.get_role(gotVCR['role_id'])
             await member.add_roles(gotRole, reason="VCRJoin")
 
 
@@ -422,8 +441,7 @@ async def on_voice_state_update(member, before, after):
 async def on_member_join(member):
     if CFGPARSER['Settings']['AutoRoleID'] != '':
         role = int(CFGPARSER['Settings']['AutoRoleID'])
-        guild = member.guild
-        getRole = guild.get_role(role)
+        getRole = member.guild.get_role(role)
         await member.add_roles(getRole, reason="AutoRole")
     if CFGPARSER['Settings']['GreetChannelID'] != '':
         channel = int(CFGPARSER['Settings']['GreetChannelID'])
@@ -435,7 +453,6 @@ async def on_member_join(member):
 # Do stuff to users upon leaving guild
 @bot.event
 async def on_member_remove(member):
-    print(member.name)
     if CFGPARSER['Settings']['LeaveChannelID'] != '':
         channel = int(CFGPARSER['Settings']['LeaveChannelID'])
         message = CFGPARSER['Settings']['LeaveMessage']

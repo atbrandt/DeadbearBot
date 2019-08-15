@@ -28,7 +28,7 @@ def setup_database():
     c.execute("""
     CREATE TABLE IF NOT EXISTS reaction_roles (
         id INTEGER PRIMARY KEY,
-        emoji text,
+        emoji TEXT,
         role_id INTEGER,
         hook_id INTEGER NOT NULL,
         FOREIGN KEY (hook_id) REFERENCES reaction_role_hooks (id)
@@ -78,7 +78,7 @@ def get_all_items():
     c.execute("""
     SELECT *
     FROM items;""")
-    return c.fetchall()
+    return dict(c.fetchall())
 
 
 # Finds an item in Item table by its name and returns it
@@ -88,7 +88,7 @@ def get_item(name):
     SELECT id, name, description
     FROM items
     WHERE name = ? COLLATE NOCASE LIMIT 1;""", (name,))
-    return c.fetchall()
+    return dict(c.fetchall())
 
 
 # Create an item
@@ -127,7 +127,7 @@ def get_all_hooks():
     c.execute("""
     SELECT *
     FROM reaction_role_hooks;""")
-    return c.fetchall()
+    return dict(c.fetchall())
 
 
 # Returns a reaction role hook by message_id
@@ -182,7 +182,7 @@ def get_all_reaction_roles():
     c.execute("""
     SELECT *
     FROM reaction_roles;""")
-    return c.fetchall()
+    return dict(c.fetchall())
 
 
 # Get reaction role entry by emoji and hook_id
@@ -228,7 +228,7 @@ def get_all_voice_channel_roles():
     c.execute("""
     SELECT *
     FROM voice_roles;""")
-    return c.fetchall()
+    return dict(c.fetchall())
 
 
 # Returns a voice chat role by vchannel_id
@@ -238,7 +238,7 @@ def get_voice_channel_role(vchannelID):
     SELECT *
     FROM voice_roles
     WHERE vchannel_id = ?;""", (vchannelID,))
-    return c.fetchall()
+    return dict(c.fetchall())
 
 
 # Adds a voice chat role to database
