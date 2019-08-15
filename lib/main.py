@@ -308,7 +308,7 @@ async def list_rr(ctx):
              aliases=['vcr'])
 @commands.is_owner()
 async def add_vcr(ctx, vchannel: discord.VoiceChannel, role: discord.Role):
-    db.add_voice_channel_role(gotChannel.id, gotRole.id)
+    db.add_voice_channel_role(vchannel.id, role.id)
     await ctx.channel.send(f"Users joining \"{vchannel.name}\" will "
                            f"automatically get the \"{role.name}\" role.")
 # ctx.channel.send("One of the IDs is malformed!")
