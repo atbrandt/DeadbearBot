@@ -1,5 +1,4 @@
 import sqlite3
-from sqlite3 import Error
 from pathlib import Path
 
 
@@ -8,13 +7,9 @@ DATABASE = str(Path(__file__).parent / "bot.db")
 
 
 # Create a database connection
-try:
-    conn = sqlite3.connect(DATABASE)
-except Error as e:
-    print(e)
-else:
-    # Set the database to return dictionaries instead of tuples
-    conn.row_factory = sqlite3.Row
+conn = sqlite3.connect(DATABASE)
+# Set the database to return dictionaries instead of tuples
+conn.row_factory = sqlite3.Row
 
 
 # Initialize database and create default tables
@@ -27,8 +22,7 @@ def setup_database():
     c.execute("""
     CREATE TABLE IF NOT EXISTS reaction_role_hooks (
         id INTEGER PRIMARY KEY,
-        channel_id INTEGER,
-        message_id INTEGER UNIQUE
+        channel_message_id INTEGER UNIQUE
     );""")
 
     c.execute("""
@@ -73,7 +67,6 @@ def setup_database():
 
     # If there are no items, add some
     if(len(get_all_items()) == 0):
-        print(get_all_items())
         create_item("Diamond", "A pretty rock.")
         create_item("Shoe", "Goes on your foot.")
         create_item("Knife", "For poking.")
@@ -132,18 +125,18 @@ def give_item(userId, itemId):
 def get_all_hooks():
     c = conn.cursor()
     c.execute("""
-    SELECT id, channel_id, message_id
+    SELECT *
     FROM reaction_role_hooks;""")
     return c.fetchall()
 
 
 # Returns a reaction role hook by message_id
-def get_hook_by_message(messageID):
+def get_hook_by_message(chnlmsgID):
     c = conn.cursor()
     c.execute("""
     SELECT *
     FROM reaction_role_hooks
-    WHERE message_id = ?;""", (messageID,))
+    WHERE channel_message_id = ?;""", (chnlmsgID,))
     return c.fetchone()
 
 
@@ -158,17 +151,15 @@ def get_hook_by_id(hookID):
 
 
 # Adds a reaction role hook to database
-def add_reaction_role_hook(channelID, messageID):
+def add_reaction_role_hook(chnlmsgID):
     c = conn.cursor()
     c.execute("""
     INSERT INTO reaction_role_hooks (
-        channel_id,
-        message_id
+        channel_message_id
     )
     VALUES (
-        ?,
         ?
-    );""", (channelID, messageID,))
+    );""", (chnlmsgID,))
     conn.commit()
     return c.lastrowid
 

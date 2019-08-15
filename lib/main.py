@@ -59,13 +59,26 @@ finally:
 bot = commands.Bot(command_prefix=CFGPARSER['Settings']['Prefix'])
 
 
-# Check permissions before executing command
-def check_perms(invoker):
-    print(invoker)
-    if invoker != 198945101739851776:
-        return False
-    else:
-        return True
+# Set up converter shorthands. These must be await'd
+convMember = commands.MemberConverter()
+convMessage = commands.MessageConverter()
+convUser = commands.UserConverter()
+convChannel = commands.TextChannelConverter()
+convVoice = commands.VoiceChannelConverter()
+convCategory = commands.CategoryChannelConverter()
+convRole = commands.RoleConverter()
+convInvite = commands.InviteConverter()
+convEmoji = commands.EmojiConverter()
+convPartialEmoji = commands.PartialEmojiConverter()
+convGame = commands.GameConverter()
+convColour = commands.ColourConverter()
+
+
+# Check something before executing command
+# def check_perms(invoker):
+#    def predicate(ctx):
+#        return ctx.foo.bar == something
+#    return commands.check(predicate)
 
 
 # Testing command
@@ -92,6 +105,7 @@ async def describe_item(ctx, item):
                           "\`{bot.command_prefix}prefix \(New prefix\)\`."),
              brief="Change bot prefix",
              aliases=['prefix'])
+@commands.is_owner()
 async def change_prefix(ctx, option):
     if not check_perms(ctx.author.id):
         await ctx.channel.send("YOU LACK PERMISSION")
@@ -107,25 +121,15 @@ async def change_prefix(ctx, option):
                           "to yourself."),
              brief="Assign or remove role.",
              aliases=["gimmie"])
-async def set_role(ctx, role):
-    if not check_perms(ctx.author.id):
-        await ctx.channel.send("YOU LACK PERMISSION")
-        return
-
-    if role.isdigit():
-        gotRole = ctx.guild.get_role(int(role))
+@commands.is_owner()
+async def set_role(ctx, role: discord.Role):
+    if role not in ctx.author.roles:
+        await ctx.author.add_roles(role, reason="SetRole")
+        await ctx.channel.send(f"Gave you the \"{role.name}\" role.")
     else:
-        gotRole = get(ctx.guild.roles, name=role)
-
-    if gotRole is not None:
-        if gotRole not in ctx.author.roles:
-            await ctx.author.add_roles(gotRole, reason="SetRole")
-            await ctx.channel.send(f"Gave you the \"{gotRole.name}\" role.")
-        else:
-            await ctx.author.remove_roles(gotRole, reason="SetRole")
-            await ctx.channel.send(f"Removed your \"{gotRole.name}\" role.")
-    else:
-        await ctx.channel.send("No role found! Check the name or ID entered.")
+        await ctx.author.remove_roles(gotRole, reason="SetRole")
+        await ctx.channel.send(f"Removed your \"{role.name}\" role.")
+# ctx.channel.send("No role found! Check the name or ID entered.")
 
 
 # Manage a role to be assigned upon joining guild
@@ -136,25 +140,13 @@ async def set_role(ctx, role):
                           " \"disable\" to turn the auto-role on or off."),
              brief="Modify auto-role settings.",
              aliases=["arole"])
+@commands.is_owner()
 async def auto_role(ctx, *role):
-    if not check_perms(ctx.author.id):
-        await ctx.channel.send("YOU LACK PERMISSION")
-        return
     if role:
-        role = role[0]
-
-        if role.isdigit():
-            gotRole = ctx.guild.get_role(int(role))
-        else:
-            gotRole = get(ctx.guild.roles, name=role)
-
-        if gotRole is not None:
-            write_cfg('Settings', AutoRoleID=str(gotRole.id))
-            await ctx.channel.send(f"Added \"{gotRole.name}\" the auto-role "
-                                    "list.")
-        else:
-            await ctx.channel.send("No role found! Check the name or ID "
-                                   "entered.")
+        role = await discord.Role(role[0])
+        write_cfg('Settings', AutoRoleID=str(role.id))
+        await ctx.channel.send(f"Added \"{role.name}\" the auto-role list.")
+# ctx.channel.send("No role found! Check the name or ID entered.")
     else:
         write_cfg('Settings', AutoRoleID='')
         await ctx.channel.send("The auto-role is now cleared.")
@@ -166,11 +158,8 @@ async def auto_role(ctx, *role):
                           "users join the server."),
              brief="Modify greet message settings.",
              aliases=["gg"])
+@commands.is_owner()
 async def guild_greet_channel(ctx):
-    if not check_perms(ctx.author.id):
-        await ctx.channel.send("YOU LACK PERMISSION")
-        return
-
     if CFGPARSER['Settings']['GreetChannelID'] == '':
         write_cfg('Settings', GreetChannelID=str(ctx.channel.id))
         await ctx.channel.send(f"Greeting enabled in \"{ctx.channel}\".")
@@ -189,11 +178,8 @@ async def guild_greet_channel(ctx):
              description=("Sets the automatic greeting message."),
              brief="Modify greet message.",
              aliases=["ggmsg"])
+@commands.is_owner()
 async def guild_greet_message(ctx, message):
-    if not check_perms(ctx.author.id):
-        await ctx.channel.send("YOU LACK PERMISSION")
-        return
-
     write_cfg('Settings', GreetMessage=message)
     await ctx.channel.send(f"The greet message is now: \"{message}\"")
 
@@ -204,11 +190,8 @@ async def guild_greet_message(ctx, message):
                           "users join the server."),
              brief="Modify greet message settings.",
              aliases=["gl"])
+@commands.is_owner()
 async def guild_farewell_channel(ctx):
-    if not check_perms(ctx.author.id):
-        await ctx.channel.send("YOU LACK PERMISSION")
-        return
-
     if CFGPARSER['Settings']['LeaveChannelID'] == '':
         write_cfg('Settings', LeaveChannelID=str(ctx.channel.id))
         await ctx.channel.send(f"Farewell enabled in \"{ctx.channel}\".")
@@ -227,11 +210,8 @@ async def guild_farewell_channel(ctx):
              description=("Sets the automatic greeting message."),
              brief="Modify greet message.",
              aliases=["glmsg"])
+@commands.is_owner()
 async def guild_farewell_message(ctx, message):
-    if not check_perms(ctx.author.id):
-        await ctx.channel.send("YOU LACK PERMISSION")
-        return
-
     write_cfg('Settings', LeaveMessage=message)
     await ctx.channel.send(f"The leave message is now: \"{message}\"")
 
@@ -242,19 +222,11 @@ async def guild_farewell_message(ctx, message):
                           "source hook for reaction roles."),
              brief="Set reaction roles hook",
              aliases=['rrhook'])
-async def add_rr_hook(ctx, channelID: int, messageID: int):
-    if not check_perms(ctx.author.id):
-        await ctx.channel.send("YOU LACK PERMISSION")
-        return
-
-    try:
-        await bot.get_channel(channelID).fetch_message(messageID)
-    except NotFound:
-        await ctx.channel.send("No message found! Check the IDs and make "
-                               "sure I have access to the right channel.")
-        return
-
-    rrhookID = db.add_reaction_role_hook(channelID, messageID)
+@commands.is_owner()
+async def add_rr_hook(ctx, message):
+# ctx.channel.send("No message found! Check the ID and make sure
+# I have access to the right channel.")
+    rrhookID = db.add_reaction_role_hook(message)
     await ctx.channel.send(f"Added a reaction role hook, ID = {rrhookID}")
 
 
@@ -264,42 +236,22 @@ async def add_rr_hook(ctx, channelID: int, messageID: int):
                           "role id."),
              brief="Create a reaction role",
              aliases=['rr'])
-async def add_rr(ctx, hookID, emoji, role):
-    if not check_perms(ctx.author.id):
-        await ctx.channel.send("YOU LACK PERMISSION")
-        return
-
+@commands.is_owner()
+async def add_rr(ctx, hookID, emoji: discord.PartialEmoji, role: discord.Role):
     rrHook = db.get_hook_by_id(hookID)
-
     if rrHook is not None:
-        messageID = int(rrHook['message_id'])
-        channelID = int(rrHook['channel_id'])
-
-        try:
-            gotMsg = await bot.get_channel(channelID).fetch_message(messageID)
-        except NotFound:
-            await ctx.channel.send("Can't find the reaction role hook!")
-            return
-
-        if role.isdigit():
-            gotRole = ctx.guild.get_role(int(role))
+        message = await convMessage.convert(ctx, rrHook['channel_message_id'])
+# ctx.channel.send("Can't find the reaction role hook!")
+        if emoji.is_custom_emoji():
+            rrID = db.add_reaction_role(str(emoji.id), role.id, rrHook['id'])            
         else:
-            gotRole = get(ctx.guild.roles, name=role)
-
-        if gotRole is not None:
-            emojiID = re.sub('(<|>|:.*?:)', '', emoji)
-            if emojiID.isdigit():
-                rrID = db.add_reaction_role(emojiID, gotRole.id, rrHook['id'])
-            else:
-                rrID = db.add_reaction_role(emoji, gotRole.id, rrHook['id'])
-            await gotMsg.add_reaction(emoji)
-            await ctx.channel.send(f"Set the \"{emoji}\" to give the "
-                                   f"{gotRole.name} role. ID = {rrID}")
-        else:
-            await ctx.channel.send("No role found! Check the name or ID "
-                                   "entered.")
+            rrID = db.add_reaction_role(emoji.name, role.id, rrHook['id'])
+        await message.add_reaction(emoji)
+        await ctx.channel.send(f"Set the \"{emoji}\" to give the {role.name} "
+                               f"role. ID = {rrID}")
+# ctx.channel.send("No role found! Check the name or ID entered.")
     else:
-        await ctx.channel.send("You need to configure a 'rrhook' first!")
+        await ctx.channel.send("No hook found for that ID.")
 
 
 # Command to delete a reaction role
@@ -307,13 +259,11 @@ async def add_rr(ctx, hookID, emoji, role):
              description=("Removes a reaction role by its ID."),
              brief="Remove a reaction role",
              aliases=['rrdel'])
+@commands.is_owner()
 async def delete_rr(ctx, rrID):
-    if not check_perms(ctx.author.id):
-        await ctx.channel.send("YOU LACK PERMISSION")
-        return
     if rrID.isdigit():
         db.delete_reaction_role(rrID)
-        await ctx.channel.send(f"Removed that entry.")
+        await ctx.channel.send(f"Removed reaction role entry {rrID}.")
     else:
         await ctx.channel.send("You must give the ID of the entry to remove.")
 
@@ -323,11 +273,10 @@ async def delete_rr(ctx, rrID):
              description=("Lists all reaction roles in database."),
              brief="List reaction roles",
              aliases=['rrlist'])
+@commands.is_owner()
 async def list_rr(ctx):
-    if not check_perms(ctx.author.id):
-        await ctx.channel.send("YOU LACK PERMISSION")
-        return
-    await ctx.channel.send(db.get_all_reaction_roles())
+    rrList = db.get_all_reaction_roles()
+    await ctx.channel.send(rrList)
 
 
 # Command to add a voice chat role
@@ -336,23 +285,12 @@ async def list_rr(ctx):
                           "joins a specified voice channel."),
              brief="Add voice chat role",
              aliases=['vcr'])
-async def add_vcr(ctx, vchannelID, role):
-    if not check_perms(ctx.author.id):
-        await ctx.channel.send("YOU LACK PERMISSION")
-        return
-    gotChannel = bot.get_channel(int(vchannelID))
-
-    if role.isdigit():
-        gotRole = ctx.guild.get_role(int(role))
-    else:
-        gotRole = get(ctx.guild.roles, name=role)
-
-    if gotRole is not None and gotChannel is not None:
-        db.add_voice_channel_role(gotChannel.id, gotRole.id)
-        await ctx.channel.send(f"Users joining {gotChannel.name} will "
-                               f"automatically get the {gotRole.name} role.")
-    else:
-        await ctx.channel.send("One of the IDs is malformed!")
+@commands.is_owner()
+async def add_vcr(ctx, vchannel: discord.VoiceChannel, role: discord.Role):
+    db.add_voice_channel_role(gotChannel.id, gotRole.id)
+    await ctx.channel.send(f"Users joining \"{vchannel.name}\" will "
+                           f"automatically get the \"{role.name}\" role.")
+# ctx.channel.send("One of the IDs is malformed!")
 
 
 # Command to delete a voice chat role
@@ -360,10 +298,8 @@ async def add_vcr(ctx, vchannelID, role):
              description=("Removes a voice chat role by its ID."),
              brief="Remove a vc role",
              aliases=['vcrdel'])
+@commands.is_owner()
 async def delete_vcr(ctx, vcrID):
-    if not check_perms(ctx.author.id):
-        await ctx.channel.send("YOU LACK PERMISSION")
-        return
     if vcrID.isdigit():
         db.delete_voice_channel_role(vcrID)
         await ctx.channel.send("Removed that entry.")
@@ -376,11 +312,10 @@ async def delete_vcr(ctx, vcrID):
              description=("Lists all voice chat roles in database."),
              brief="List voice chat roles",
              aliases=['vcrlist'])
+@commands.is_owner()
 async def list_vcr(ctx):
-    if not check_perms(ctx.author.id):
-        await ctx.channel.send("YOU LACK PERMISSION")
-        return
-    await ctx.channel.send(db.get_all_voice_channel_roles())
+    vcrList = db.get_all_voice_channel_roles()
+    await ctx.channel.send(vcrList)
 
 
 # Get list of roles (with IDs) on guild
@@ -388,10 +323,8 @@ async def list_vcr(ctx):
              description=("Returns list of roles on server with IDs."),
              brief="Get all roles with IDs",
              aliases=['roles'])
+@commands.is_owner()
 async def get_roles(ctx):
-    if not check_perms(ctx.author.id):
-        await ctx.channel.send("YOU LACK PERMISSION")
-        return
     await ctx.channel.send(f"```{ctx.guild.roles}```")
 
 
@@ -400,10 +333,8 @@ async def get_roles(ctx):
              description=("Returns list of emojis on server with IDs."),
              brief="Get all emojis with IDs",
              aliases=['emojis'])
+@commands.is_owner()
 async def get_emojis(ctx):
-    if not check_perms(ctx.author.id):
-        await ctx.channel.send("YOU LACK PERMISSION")
-        return
     await ctx.channel.send(f"```{ctx.guild.emojis}```")
 
 
@@ -412,61 +343,61 @@ async def get_emojis(ctx):
              description=("Returns list of channels on server with IDs."),
              brief="Get all channels with IDs",
              aliases=['channels'])
+@commands.is_owner()
 async def get_channels(ctx):
-    if not check_perms(ctx.author.id):
-        await ctx.channel.send("YOU LACK PERMISSION")
-        return
     await ctx.channel.send(f"```{ctx.guild.channels}```")
 
 
 # Reaction Role add hook function
 @bot.event
 async def on_raw_reaction_add(payload):
-    if payload.user_id == bot.user.id:
+    if payload.user_id != bot.user.id:
+        chnlmsgID = '-'.join(payload.channel_id, payload.message_id)
+        rrHook = db.get_hook_by_message(chnlmsgID)
+    else:
         return
-
-    rrHook = db.get_hook_by_message(payload.message_id)
 
     if rrHook is not None:
         if payload.emoji.is_custom_emoji():
             emoji = str(payload.emoji.id)
         else:
             emoji = payload.emoji.name
-
         gotRR = db.get_reaction_role(rrHook['id'], emoji)
+    else:
+        return
 
-        if gotRR is not None:
-            guild = bot.get_guild(payload.guild_id)
-            member = guild.get_member(payload.user_id)
-            gotRole = guild.get_role(gotRR['role_id'])
-
-            if gotRole not in member.roles:
-                await member.add_roles(gotRole, reason="ReactionRole")
+    if gotRR is not None:
+        guild = bot.get_guild(payload.guild_id)
+        member = guild.get_member(payload.user_id)
+        role = guild.get_role(gotRR['role_id'])
+        if role not in member.roles:
+            await member.add_roles(role, reason="ReactionRole")
 
 
 # Reaction Role remove hook function
 @bot.event
 async def on_raw_reaction_remove(payload):
-    if payload.user_id == bot.user.id:
+    if payload.user_id != bot.user.id:
+        chnlmsgID = str(payload.channel_id) + "-" + str(payload.message_id)
+        rrHook = db.get_hook_by_message(chnlmsgID)
+    else:
         return
-
-    rrHook = db.get_hook_by_message(payload.message_id)
 
     if rrHook is not None:
         if payload.emoji.is_custom_emoji():
             emoji = str(payload.emoji.id)
         else:
             emoji = payload.emoji.name
-
         gotRR = db.get_reaction_role(rrHook['id'], emoji)
+    else:
+        return
 
-        if gotRR is not None:
-            guild = bot.get_guild(payload.guild_id)
-            member = guild.get_member(payload.user_id)
-            gotRole = guild.get_role(gotRR['role_id'])
-
-            if gotRole in member.roles:
-                await member.remove_roles(gotRole, reason="ReactionRole")
+    if gotRR is not None:
+        guild = bot.get_guild(payload.guild_id)
+        member = guild.get_member(payload.user_id)
+        role = guild.get_role(gotRR['role_id'])
+        if role in member.roles:
+            await member.remove_roles(role, reason="ReactionRole")
 
 
 # Voice Chat Role hook function
@@ -476,13 +407,13 @@ async def on_voice_state_update(member, before, after):
         gotVCR = db.get_voice_channel_role(before.channel.id)
         if gotVCR is not None:
             guild = bot.get_guild(before.channel.guild.id)
-            gotRole = guild.get_role(gotVCR['roleID'])
-            await member.remove_roles(gotRole, reason="VCRLeave")
+            role = guild.get_role(gotVCR['role_id'])
+            await member.remove_roles(role, reason="VCRLeave")
     if after.channel is not None:
         gotVCR = db.get_voice_channel_role(after.channel.id)
         if gotVCR is not None:
-            guild = bot.get_guild(after.channel.guild.id)
-            gotRole = guild.get_role(gotVCR['roleID'])
+            guild = bot.get_guild(before.channel.guild.id)
+            role = guild.get_role(gotVCR['role_id'])
             await member.add_roles(gotRole, reason="VCRJoin")
 
 
@@ -510,6 +441,12 @@ async def on_member_remove(member):
         message = CFGPARSER['Settings']['LeaveMessage']
         gotChannel = bot.get_channel(channel)
         await gotChannel.send(message.format(member=member))
+
+
+# Global error handler as temp solution
+@bot.event
+async def on_command_error(ctx, error):
+    await ctx.channel.send(error)
 
 
 # Output info to console once bot is initialized and ready
