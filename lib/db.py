@@ -69,7 +69,7 @@ def setup_database():
         FOREIGN KEY (item_id) REFERENCES items (id)
     );""")
 
-#    conn.commit()
+    conn.commit()
 
     # If there are no items, add some
     if(len(get_all_items()) == 0):
@@ -110,7 +110,7 @@ def create_item(name, description):
         ?,
         ?
     );""", (name, description,))
-#    conn.commit()
+    conn.commit()
 
 
 # Gives an item to a user
@@ -125,7 +125,7 @@ def give_item(userId, itemId):
         ?,
         ?
     );""", (userId, itemId,))
-#    conn.commit()
+    conn.commit()
 
 
 # Returns all reaction role hooks
@@ -147,6 +147,16 @@ def get_hook_by_message(messageID):
     return c.fetchone()
 
 
+# Returns a reaction role hook by message_id
+def get_hook_by_id(hookID):
+    c = conn.cursor()
+    c.execute("""
+    SELECT *
+    FROM reaction_role_hooks
+    WHERE id = ?;""", (hookID,))
+    return c.fetchone()
+
+
 # Adds a reaction role hook to database
 def add_reaction_role_hook(channelID, messageID):
     c = conn.cursor()
@@ -159,7 +169,7 @@ def add_reaction_role_hook(channelID, messageID):
         ?,
         ?
     );""", (channelID, messageID,))
-#    conn.commit()
+    conn.commit()
     return c.lastrowid
 
 
@@ -172,7 +182,7 @@ def delete_reaction_role_hook(rrID):
     c.execute("""
     DELETE FROM reaction_roles
     WHERE hook_id = ?;""", (rrID,))
-#    conn.commit()
+    conn.commit()
 
 
 # Returns all reaction roles
@@ -191,7 +201,7 @@ def get_reaction_role(hookID, emoji):
     SELECT *
     FROM reaction_roles
     WHERE hook_id = ? AND emoji = ?;""", (hookID, emoji,))
-    return c.fetchall()
+    return c.fetchone()
 
 
 # Adds a reaction role to database
@@ -208,7 +218,7 @@ def add_reaction_role(emoji, roleID, hookID):
         ?,
         ?
     );""", (emoji, roleID, hookID,))
-#    conn.commit()
+    conn.commit()
     return c.lastrowid
 
 
@@ -218,7 +228,7 @@ def delete_reaction_role(rrID):
     c.execute("""
     DELETE FROM reaction_roles
     WHERE id = ?;""", (rrID,))
-#    conn.commit()
+    conn.commit()
 
 
 # Returns all voice chat roles
@@ -252,7 +262,7 @@ def add_voice_channel_role(vchannelID, roleID):
         ?,
         ?
     );""", (vchannelID, roleID,))
-#    conn.commit()
+    conn.commit()
 
 
 # Removes a voice chat role from database
@@ -261,4 +271,4 @@ def delete_voice_channel_role(vcrID):
     c.execute("""
     DELETE FROM voice_roles
     WHERE id = ?;""", (vcrID,))
-#    conn.commit()
+    conn.commit()

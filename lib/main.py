@@ -111,6 +111,7 @@ async def set_role(ctx, role):
     if not check_perms(ctx.author.id):
         await ctx.channel.send("YOU LACK PERMISSION")
         return
+
     if role.isdigit():
         gotRole = ctx.guild.get_role(int(role))
     else:
@@ -141,6 +142,7 @@ async def auto_role(ctx, *role):
         return
     if role:
         role = role[0]
+
         if role.isdigit():
             gotRole = ctx.guild.get_role(int(role))
         else:
@@ -262,21 +264,16 @@ async def add_rr_hook(ctx, channelID: int, messageID: int):
                           "role id."),
              brief="Create a reaction role",
              aliases=['rr'])
-async def add_rr(ctx, emoji, role, messageID):
+async def add_rr(ctx, hookID, emoji, role):
     if not check_perms(ctx.author.id):
         await ctx.channel.send("YOU LACK PERMISSION")
         return
 
-    emojiID = re.sub('(<|>|:.*?:)', '', emoji)
+    rrHook = db.get_hook_by_id(hookID)
 
-    if emojiID.isdigit():
-        emoji = bot.get_emoji(emojiID)
-
-    msgHook = db.get_hook_by_message(messageID)
-
-    if msgHook is not None:
-        messageID = int(msgHook['message_id'])
-        channelID = int(msgHook['channel_id'])
+    if rrHook is not None:
+        messageID = int(rrHook['message_id'])
+        channelID = int(rrHook['channel_id'])
 
         try:
             gotMsg = await bot.get_channel(channelID).fetch_message(messageID)
@@ -290,7 +287,11 @@ async def add_rr(ctx, emoji, role, messageID):
             gotRole = get(ctx.guild.roles, name=role)
 
         if gotRole is not None:
-            rrID = db.add_reaction_role(emoji, gotRole.id, msgHook['id'])
+            emojiID = re.sub('(<|>|:.*?:)', '', emoji)
+            if emojiID.isdigit():
+                rrID = db.add_reaction_role(emojiID, gotRole.id, rrHook['id'])
+            else:
+                rrID = db.add_reaction_role(emoji, gotRole.id, rrHook['id'])
             await gotMsg.add_reaction(emoji)
             await ctx.channel.send(f"Set the \"{emoji}\" to give the "
                                    f"{gotRole.name} role. ID = {rrID}")
@@ -418,38 +419,52 @@ async def get_channels(ctx):
     await ctx.channel.send(f"```{ctx.guild.channels}```")
 
 
-# Reaction Role hook function
+# Reaction Role add hook function
 @bot.event
 async def on_raw_reaction_add(payload):
-    guild = bot.get_guild(payload.guild_id)
-    member = guild.get_member(payload.user_id)
-    if member.bot:
+    if payload.user_id == bot.user.id:
         return
-    rrHookList = db.get_all_hooks()
-    print(rrHookList)
-    if payload.message_id == int(rrHookList['message_id']):
-        emoji = str(payload.emoji)
-        gotRR = db.get_reaction_roles_by_hook(rrhooklist['id'], emoji)
-        print(gotRR)
+
+    rrHook = db.get_hook_by_message(payload.message_id)
+
+    if rrHook is not None:
+        if payload.emoji.is_custom_emoji():
+            emoji = str(payload.emoji.id)
+        else:
+            emoji = payload.emoji.name
+
+        gotRR = db.get_reaction_role(rrHook['id'], emoji)
+
         if gotRR is not None:
+            guild = bot.get_guild(payload.guild_id)
+            member = guild.get_member(payload.user_id)
             gotRole = guild.get_role(gotRR['role_id'])
+
             if gotRole not in member.roles:
                 await member.add_roles(gotRole, reason="ReactionRole")
 
 
-# Reaction Role hook function
+# Reaction Role remove hook function
 @bot.event
 async def on_raw_reaction_remove(payload):
-    guild = bot.get_guild(payload.guild_id)
-    member = guild.get_member(payload.user_id)
-    if member.bot:
+    if payload.user_id == bot.user.id:
         return
-    rrHookList = db.get_all_hooks()
-    if payload.message_id == int(rrHookList['message_id']):
-        emoji = str(payload.emoji)
-        gotRR = db.get_reaction_roles_by_hook(rrhooklist['id'], emoji)
+
+    rrHook = db.get_hook_by_message(payload.message_id)
+
+    if rrHook is not None:
+        if payload.emoji.is_custom_emoji():
+            emoji = str(payload.emoji.id)
+        else:
+            emoji = payload.emoji.name
+
+        gotRR = db.get_reaction_role(rrHook['id'], emoji)
+
         if gotRR is not None:
-            gotRole = guild.get_role(gotRR['roleID'])
+            guild = bot.get_guild(payload.guild_id)
+            member = guild.get_member(payload.user_id)
+            gotRole = guild.get_role(gotRR['role_id'])
+
             if gotRole in member.roles:
                 await member.remove_roles(gotRole, reason="ReactionRole")
 
