@@ -65,12 +65,6 @@ def setup_database():
 
     conn.commit()
 
-    # If there are no items, add some
-    if(len(get_all_items()) == 0):
-        create_item("Diamond", "A pretty rock.")
-        create_item("Shoe", "Goes on your foot.")
-        create_item("Knife", "For poking.")
-
 
 # Returns all items in Item table
 def get_all_items():
