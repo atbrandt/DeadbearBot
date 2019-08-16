@@ -89,7 +89,7 @@ async def hello_world(ctx):
 # Describe item by name in database
 @bot.command(name='describe')
 async def describe_item(ctx, item):
-    gotItem = get_item(item)
+    gotItem = db.get_item(item)
 
     if item is not None:
         await ctx.channel.send(gotItem['description'])
@@ -246,7 +246,7 @@ async def delete_rr_hook(ctx, hookID):
              aliases=['listrrhook'])
 @commands.is_owner()
 async def list_rr_hook(ctx):
-    hookList = db.get_all_hooks()
+    hookList = dict(db.get_all_hooks())
     await ctx.channel.send(hookList)
 
 
@@ -296,7 +296,7 @@ async def delete_rr(ctx, rrID):
              aliases=['listrr'])
 @commands.is_owner()
 async def list_rr(ctx):
-    rrList = db.get_all_reaction_roles()
+    rrList = dict(db.get_all_reaction_roles())
     await ctx.channel.send(rrList)
 
 
@@ -335,7 +335,7 @@ async def delete_vcr(ctx, vcrID):
              aliases=['listvcr'])
 @commands.is_owner()
 async def list_vcr(ctx):
-    vcrList = db.get_all_voice_channel_roles()
+    vcrList = dict(db.get_all_voice_channel_roles())
     await ctx.channel.send(vcrList)
 
 
@@ -433,7 +433,7 @@ async def on_voice_state_update(member, before, after):
         gotVCR = db.get_voice_channel_role(after.channel.id)
         if gotVCR is not None:
             role = member.guild.get_role(gotVCR['role_id'])
-            await member.add_roles(gotRole, reason="VCRJoin")
+            await member.add_roles(role, reason="VCRJoin")
 
 
 # Do stuff to users upon joining guild

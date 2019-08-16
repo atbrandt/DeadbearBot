@@ -72,7 +72,7 @@ def get_all_items():
     c.execute("""
     SELECT *
     FROM items;""")
-    return dict(c.fetchall())
+    return c.fetchall()
 
 
 # Finds an item in Item table by its name and returns it
@@ -82,7 +82,7 @@ def get_item(name):
     SELECT id, name, description
     FROM items
     WHERE name = ? COLLATE NOCASE LIMIT 1;""", (name,))
-    return dict(c.fetchall())
+    return c.fetchall()
 
 
 # Create an item
@@ -121,7 +121,7 @@ def get_all_hooks():
     c.execute("""
     SELECT *
     FROM reaction_role_hooks;""")
-    return dict(c.fetchall())
+    return c.fetchall()
 
 
 # Returns a reaction role hook by message_id
@@ -176,7 +176,7 @@ def get_all_reaction_roles():
     c.execute("""
     SELECT *
     FROM reaction_roles;""")
-    return dict(c.fetchall())
+    return c.fetchall()
 
 
 # Get reaction role entry by emoji and hook_id
@@ -222,7 +222,7 @@ def get_all_voice_channel_roles():
     c.execute("""
     SELECT *
     FROM voice_roles;""")
-    return dict(c.fetchall())
+    return c.fetchall()
 
 
 # Returns a voice chat role by vchannel_id
@@ -232,7 +232,7 @@ def get_voice_channel_role(vchannelID):
     SELECT *
     FROM voice_roles
     WHERE vchannel_id = ?;""", (vchannelID,))
-    return dict(c.fetchall())
+    return c.fetchone()
 
 
 # Adds a voice chat role to database
