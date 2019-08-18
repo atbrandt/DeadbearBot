@@ -23,6 +23,8 @@ The current todo list includes:
 * A currency system that allows buying things in a configurable shop
 * A raffling system that allows submitting steam keys to the bot to be raffled out to users or bought with currency
 * Some kind of image manipulation system a-la the defunct NotSoBot?
+* A deployment system that allows the bot to be easily set up with no fuss (docker maybe?)
+* A hosted version of the bot that can simply be invited to a server, no host computer required
 * Other fun things...
 
 ## Why are you rewriting bot functionality that already exists?
