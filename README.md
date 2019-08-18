@@ -13,6 +13,7 @@ Currently, DeadbearBot can:
 ## What's planned for the future?
 The current todo list includes:
 * Make the bot say things in nicely formatted messages
+* Make the bot programmatically log certain events in a server to a specified channel
 * Assign a role to anyone via command
 * Assign multiple roles to users when joining the server
 * Allow greeting/leave messages to be sent at a channel level
