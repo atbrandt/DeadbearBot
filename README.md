@@ -29,3 +29,6 @@ The current todo list includes:
 
 ## Why are you rewriting bot functionality that already exists?
 [Wikipedia: Reinventing the wheel](https://en.wikipedia.org/wiki/Reinventing_the_wheel)
+
+
+### If you like this project, consider tipping me on [Patreon](https://www.patreon.com/DEADBEAR)
