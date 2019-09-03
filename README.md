@@ -1,5 +1,11 @@
 # DeadbearBot
-A [Discord](https://discordapp.com/) server management bot, inspired by [NadekoBot](https://nadekobot.me/) and written in Python (version 3+) using the [discord.py module](https://github.com/Rapptz/discord.py).
+A [Discord](https://discordapp.com/) server management bot, inspired by [NadekoBot](https://nadekobot.me/) and written in Python (version 3.5.3+) using the [discord.py module](https://github.com/Rapptz/discord.py).
+
+## How do I use it?
+1. Clone the repo
+2. Install requirements from requirements.txt
+3. Run the main.py script in a terminal
+4. Enter your bot's secret token
 
 ## What's it do?
 Currently, DeadbearBot can:
