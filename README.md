@@ -9,7 +9,7 @@ A [Discord](https://discordapp.com/) server management bot, inspired by [NadekoB
 
 ## What's it do?
 Currently, DeadbearBot can:
-* Assign or unassign a role to yourself
+* Assign or unassign a role to a target user
 * Automatically assign a role to users when joining your server
 * Allow users to assign roles to themselves by clicking a fully configurable emoji reaction
 * Automatically assign a role to a user when connecting to a voice channel
