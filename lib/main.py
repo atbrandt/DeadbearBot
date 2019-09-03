@@ -1,63 +1,38 @@
+import os
+from pathlib import Path
+from dotenv import load_dotenv
 import discord
-import asyncio
-import aiohttp
-import configparser
-import db
-import re
 from discord.ext import commands
 from discord.utils import get
-from pathlib import Path
+import config
+import db
 
 
-# Setting platform-independent path to config file
-CONFIG = Path(__file__).parent / "init.cfg"
+# Setting platform-independent path to environment variables
+ENVFILE = Path(__file__).parent / "secret.env"
 
 
-# Initialize configparser settings
-CFGPARSER = configparser.ConfigParser(empty_lines_in_values=False)
-CFGPARSER.optionxform = lambda option: option
+# Loading environment variables and checking for secret token presence
+if ENVFILE.exists():
+    load_dotenv(dotenv_path=ENVFILE)
+    token = os.getenv('DEADBEAR_TOKEN')
+else:
+    print("No bot token found!")
+    token = input("Enter your bot's token: ")
+    with Path.open(ENVFILE, 'w', encoding='utf-8') as file:
+        file.write(f"export DEADBEAR_TOKEN=\'{token}\';")    
 
 
-# Set a reference of default options that must exist in config
-CFGDEFAULT = {'Token': '',
-              'Prefix': '-',
-              'AutoRoleID': '',
-              'GreetChannelID': '',
-              'GreetMessage': '',
-              'LeaveChannelID': '',
-              'LeaveMessage': ''}
-
-
-# Function for writing to the config file
-def write_cfg(*args, **kwargs):
-    args = ''.join(args)
-    for key, value in kwargs.items():
-        CFGPARSER.set(args, key, value)
-    with Path.open(CONFIG, 'w', encoding='utf-8') as configfile:
-        CFGPARSER.write(configfile)
-
-
-# Initialize config
-try:
-    CFGPARSER.read_file(Path.open(CONFIG))
-    cfgcur = list(CFGPARSER.items('Settings'))
-    cfgdef = list(CFGDEFAULT.items())
-    CFGPARSER['Settings'] = dict(cfgdef + cfgcur)
-    write_cfg()
-except:
-    CFGPARSER.add_section('Settings')
-    CFGPARSER['Settings'] = CFGDEFAULT
-    write_cfg()
-finally:
-    if CFGPARSER['Settings']['Token'] == '':
-        write_cfg('Settings', Token=input("Enter your bot's token: "))
+# Read the bot's config.yml and import it
+CONFIG = config.read_cfg()
 
 
 # Initialize the bot and set the default command prefix
-bot = commands.Bot(command_prefix=CFGPARSER['Settings']['Prefix'])
+bot = commands.Bot(command_prefix=CONFIG['Global']['Prefix'])
 
 
-# Set up converter shorthands. These must be awaited
+# Set up converter shorthands. These are coroutines, must be awaited.
+# Usage is *.convert(ctx, arg)
 convMember = commands.MemberConverter()
 convMessage = commands.MessageConverter()
 convUser = commands.UserConverter()
@@ -72,7 +47,7 @@ convGame = commands.GameConverter()
 convColour = commands.ColourConverter()
 
 
-# Check something before executing command
+# Example of checking something before executing command
 # def check_perms(invoker):
 #    def predicate(ctx):
 #        return ctx.foo.bar == something
@@ -99,70 +74,77 @@ async def describe_item(ctx, item):
 
 # Change the default bot prefix
 @bot.command(name='ChangePrefix',
-             description=("Changes the default bot command prefix. Usage is "
-                          "\`{bot.command_prefix}prefix \(New prefix\)\`."),
+             description="Changes the default bot command prefix.",
              brief="Change bot prefix",
              aliases=['prefix'])
 @commands.is_owner()
-async def change_prefix(ctx, option):
-    write_cfg('Settings', Prefix=option)
-    bot.command_prefix = option
-    await ctx.channel.send(f"My command prefix is now \"{option}\".")
+async def change_prefix(ctx, prefix):
+    CONFIG['Global']['Prefix'] = prefix
+    config.write_cfg(CONFIG)
+    bot.command_prefix = prefix
+    await ctx.channel.send(f"My command prefix is now \"{prefix}\".")
 
 
-# Allow users to self-assign roles
-@bot.command(name='GiveMeRole',
-             description=("Assigns or removes a specified role name or ID "
-                          "to yourself."),
-             brief="Assign or remove role.",
-             aliases=["gimmie"])
+# Assign specific roles to specific users
+@bot.group(name='ToggleRole',
+           description="Assigns or removes a specified role to a specified "
+                       "target. Pass a \"user name or ID\" and a \"role "
+                       "name or ID\" to toggle that user's role.",
+           brief="Assign or remove role by name or ID",
+           aliases=['trole'])
 @commands.is_owner()
-async def set_role(ctx, role: discord.Role):
-    if role not in ctx.author.roles:
-        await ctx.author.add_roles(role, reason="SetRole")
-        await ctx.channel.send(f"Gave you the \"{role.name}\" role.")
-    else:
-        await ctx.author.remove_roles(gotRole, reason="SetRole")
-        await ctx.channel.send(f"Removed your \"{role.name}\" role.")
-# ctx.channel.send("No role found! Check the name or ID entered.")
+async def toggle_role(ctx, member: discord.Member, role: discord.Role):
+    if None not in (member, role):
+        if role not in member.roles:
+            await member.add_roles(role,
+                                   reason=f"GiveRole by {ctx.author.name}")
+            await ctx.channel.send(f"Gave {member.name} the \"{role.name}"
+                                   f"\" role.")
+        else:
+            await member.remove_roles(role,
+                                      reason=f"GiveRole by {ctx.author.name}")
+            await ctx.channel.send(f"Removed the \"{role.name}\" role from "
+                                   f"{member.name}.")
 
 
 # Manage a role to be assigned upon joining guild
 @bot.command(name='AutoRole',
-             description=("Sets a role that users get automatically upon "
-                          "joining the server. Usage is `-arole set "
-                          "\(Role name or ID string\)`. Pass \"enable\" or"
-                          " \"disable\" to turn the auto-role on or off."),
+             description="Sets a role that users get automatically upon "
+                         "join. Pass `\"role name or role ID\"` to enable "
+                         "the auto-role. Pass nothing to turn it off.",
              brief="Modify auto-role settings.",
              aliases=["arole"])
 @commands.is_owner()
-async def auto_role(ctx, *role):
-    if role:
-        role = await convRole.convert(ctx, role[0])
-        write_cfg('Settings', AutoRoleID=str(role.id))
-        await ctx.channel.send(f"Added \"{role.name}\" the auto-role list.")
-# ctx.channel.send("No role found! Check the name or ID entered.")
+async def auto_role(ctx, role: discord.Role):
+    if role.id not in CONFIG['AutoRole']:
+        CONFIG['AutoRole'] = role.id
+        config.write_cfg(CONFIG)
+        await ctx.channel.send(f"Added \"{role.name}\" to auto-role.")
     else:
-        write_cfg('Settings', AutoRoleID='')
-        await ctx.channel.send("The auto-role is now cleared.")
+        CONFIG['AutoRole'] = None
+        config.write_cfg(CONFIG)
+        await ctx.channel.send(f"Removed \"{role.name}\" from auto-role.")
+# ctx.channel.send("No role found! Check the name or ID entered.")
 
 
 # Set the greet message channel
 @bot.command(name='GuildGreet',
-             description=("Configures the automatic greeting message when "
-                          "users join the server."),
+             description="Configures the automatic greeting message when "
+                         "users join the server.",
              brief="Modify greet message settings.",
              aliases=["gg"])
 @commands.is_owner()
 async def guild_greet_channel(ctx):
-    if CFGPARSER['Settings']['GreetChannelID'] == '':
-        write_cfg('Settings', GreetChannelID=str(ctx.channel.id))
+    if CONFIG['Greetings']['ChannelID'] == None:
+        CONFIG['Greetings']['ChannelID'] = ctx.channel.id
+        config.write_cfg(CONFIG)
         await ctx.channel.send(f"Greeting enabled in \"{ctx.channel}\".")
-    elif CFGPARSER['Settings']['GreetChannelID'] == str(ctx.channel.id):
-        write_cfg('Settings', GreetChannelID='')
+    elif CONFIG['Greetings']['ChannelID'] == ctx.channel.id:
+        CONFIG['Greetings']['ChannelID'] = None
+        config.write_cfg(CONFIG)
         await ctx.channel.send("Greeting disabled.")
     else:
-        curGreetChannel = int(CFGPARSER['Settings']['GreetChannelID'])
+        curGreetChannel = int(CONFIG['Greetings']['ChannelID'])
         gotChannel = bot.get_channel(curGreetChannel)
         await ctx.channel.send(f"Disable the greeting by running this "
                                f"command in \"{gotChannel.name}\".")
@@ -170,31 +152,34 @@ async def guild_greet_channel(ctx):
 
 # Set the greet message
 @bot.command(name='GuildGreetMessage',
-             description=("Sets the automatic greeting message."),
+             description="Sets the automatic greeting message.",
              brief="Modify greet message.",
              aliases=["ggmsg"])
 @commands.is_owner()
 async def guild_greet_message(ctx, message):
-    write_cfg('Settings', GreetMessage=message)
+    CONFIG['Greetings']['Message'] = message
+    config.write_cfg(CONFIG)
     await ctx.channel.send(f"The greet message is now: \"{message}\"")
 
 
 # Set the leave message channel
 @bot.command(name='GuildLeave',
-             description=("Configures the automatic greeting message when "
-                          "users join the server."),
+             description="Configures the automatic greeting message when "
+                         "users join the server.",
              brief="Modify greet message settings.",
              aliases=["gl"])
 @commands.is_owner()
 async def guild_farewell_channel(ctx):
-    if CFGPARSER['Settings']['LeaveChannelID'] == '':
-        write_cfg('Settings', LeaveChannelID=str(ctx.channel.id))
+    if CONFIG['Farewells']['ChannelID'] == None:
+        CONFIG['Farewells']['ChannelID'] = ctx.channel.id
+        config.write_cfg(CONFIG)
         await ctx.channel.send(f"Farewell enabled in \"{ctx.channel}\".")
-    elif CFGPARSER['Settings']['LeaveChannelID'] == str(ctx.channel.id):
-        write_cfg('Settings', LeaveChannelID='')
+    elif CONFIG['Farewells']['ChannelID'] == ctx.channel.id:
+        CONFIG['Farewells']['ChannelID'] = None
+        config.write_cfg(CONFIG)
         await ctx.channel.send("Farewell disabled.")
     else:
-        curLeaveChannel = int(CFGPARSER['Settings']['LeaveChannelID'])
+        curLeaveChannel = int(CONFIG['Farewells']['ChannelID'])
         gotChannel = bot.get_channel(curLeaveChannel)
         await ctx.channel.send(f"Disable the greeting by running this "
                                f"command in \"{gotChannel.name}\".")
@@ -202,19 +187,20 @@ async def guild_farewell_channel(ctx):
 
 # Set the leave message
 @bot.command(name='GuildLeaveMessage',
-             description=("Sets the automatic greeting message."),
+             description="Sets the automatic greeting message.",
              brief="Modify greet message.",
              aliases=["glmsg"])
 @commands.is_owner()
 async def guild_farewell_message(ctx, message):
-    write_cfg('Settings', LeaveMessage=message)
+    CONFIG['Farewells']['Message'] = message
+    config.write_cfg(CONFIG)
     await ctx.channel.send(f"The leave message is now: \"{message}\"")
 
 
 # Command to set a message as a hook for reaction roles
 @bot.command(name='ReactionRoleHook',
-             description=("Sets a given message in a given channel as a "
-                          "source hook for reaction roles."),
+             description="Sets a given message in a given channel as a "
+                         "source hook for reaction roles.",
              brief="Set reaction role hook",
              aliases=['rrhook'])
 @commands.is_owner()
@@ -227,7 +213,7 @@ async def add_rr_hook(ctx, message):
 
 # Command to delete a message hook for reaction roles
 @bot.command(name='DeleteReactionRoleHook',
-             description=("Deletes a reaction role hook by its id."),
+             description="Deletes a reaction role hook by its id.",
              brief="Delete reaction role hook",
              aliases=['delrrhook'])
 @commands.is_owner()
@@ -241,7 +227,7 @@ async def delete_rr_hook(ctx, hookID):
 
 # Command to list all reaction role hooks
 @bot.command(name='ListReactRoleHooks',
-             description=("Lists all reaction role hooks in database."),
+             description="Lists all reaction role hooks in database.",
              brief="List reaction roles",
              aliases=['listrrhook'])
 @commands.is_owner()
@@ -252,8 +238,8 @@ async def list_rr_hook(ctx):
 
 # Command to set a reaction role
 @bot.command(name='ReactionRole',
-             description=("Adds a reaction role using a given emoji and "
-                          "role id."),
+             description="Adds a reaction role using a given emoji and "
+                         "role id.",
              brief="Create a reaction role",
              aliases=['rr'])
 @commands.is_owner()
@@ -277,7 +263,7 @@ async def add_rr(ctx, hookID, emoji, role: discord.Role):
 
 # Command to delete a reaction role
 @bot.command(name='DeleteReactionRole',
-             description=("Removes a reaction role by its ID."),
+             description="Removes a reaction role by its ID.",
              brief="Remove a reaction role",
              aliases=['delrr'])
 @commands.is_owner()
@@ -291,7 +277,7 @@ async def delete_rr(ctx, rrID):
 
 # Command to list all reaction roles
 @bot.command(name='ListReactRoles',
-             description=("Lists all reaction roles in database."),
+             description="Lists all reaction roles in database.",
              brief="List reaction roles",
              aliases=['listrr'])
 @commands.is_owner()
@@ -302,8 +288,8 @@ async def list_rr(ctx):
 
 # Command to add a voice chat role
 @bot.command(name='VoiceChatRole',
-             description=("Sets a given role to be added to anyone that "
-                          "joins a specified voice channel."),
+             description="Sets a given role to be added to anyone that "
+                         "joins a specified voice channel.",
              brief="Add voice chat role",
              aliases=['vcr'])
 @commands.is_owner()
@@ -316,7 +302,7 @@ async def add_vcr(ctx, vchannel: discord.VoiceChannel, role: discord.Role):
 
 # Command to delete a voice chat role
 @bot.command(name='DeleteVoiceChatRole',
-             description=("Removes a voice chat role by its ID."),
+             description="Removes a voice chat role by its ID.",
              brief="Remove a vc role",
              aliases=['delvcr'])
 @commands.is_owner()
@@ -330,7 +316,7 @@ async def delete_vcr(ctx, vcrID):
 
 # Command to list all voice chat roles
 @bot.command(name='ListVoiceChatRoles',
-             description=("Lists all voice chat roles in database."),
+             description="Lists all voice chat roles in database.",
              brief="List voice chat roles",
              aliases=['listvcr'])
 @commands.is_owner()
@@ -341,7 +327,7 @@ async def list_vcr(ctx):
 
 # Get list of roles (with IDs) on guild
 @bot.command(name='GetRoleIDs',
-             description=("Returns list of roles on server with IDs."),
+             description="Returns list of roles on server with IDs.",
              brief="Get all roles with IDs",
              aliases=['roles'])
 @commands.is_owner()
@@ -351,7 +337,7 @@ async def get_roles(ctx):
 
 # Get list of emojis (with IDs) on guild
 @bot.command(name='GetEmojiIDs',
-             description=("Returns list of emojis on server with IDs."),
+             description="Returns list of emojis on server with IDs.",
              brief="Get all emojis with IDs",
              aliases=['emojis'])
 @commands.is_owner()
@@ -361,7 +347,7 @@ async def get_emojis(ctx):
 
 # Get list of channels (with IDs) on guild
 @bot.command(name='GetChannelIDs',
-             description=("Returns list of channels on server with IDs."),
+             description="Returns list of channels on server with IDs.",
              brief="Get all channels with IDs",
              aliases=['channels'])
 @commands.is_owner()
@@ -439,13 +425,13 @@ async def on_voice_state_update(member, before, after):
 # Do stuff to users upon joining guild
 @bot.event
 async def on_member_join(member):
-    if CFGPARSER['Settings']['AutoRoleID'] != '':
-        role = int(CFGPARSER['Settings']['AutoRoleID'])
+    if CONFIG['AutoRole'] != '':
+        role = int(CONFIG['AutoRole'])
         getRole = member.guild.get_role(role)
         await member.add_roles(getRole, reason="AutoRole")
-    if CFGPARSER['Settings']['GreetChannelID'] != '':
-        channel = int(CFGPARSER['Settings']['GreetChannelID'])
-        message = CFGPARSER['Settings']['GreetMessage']
+    if CONFIG['Greetings']['ChannelID'] != None:
+        channel = int(CONFIG['Greetings']['ChannelID'])
+        message = CONFIG['Greetings']['Message']
         gotChannel = bot.get_channel(channel)
         await gotChannel.send(message.format(member=member))
 
@@ -453,9 +439,9 @@ async def on_member_join(member):
 # Do stuff to users upon leaving guild
 @bot.event
 async def on_member_remove(member):
-    if CFGPARSER['Settings']['LeaveChannelID'] != '':
-        channel = int(CFGPARSER['Settings']['LeaveChannelID'])
-        message = CFGPARSER['Settings']['LeaveMessage']
+    if CONFIG['Farewells']['ChannelID'] != None:
+        channel = int(CONFIG['Farewells']['ChannelID'])
+        message = CONFIG['Farewells']['Message']
         gotChannel = bot.get_channel(channel)
         await gotChannel.send(message.format(member=member))
 
@@ -475,7 +461,7 @@ async def on_ready():
 
 # Run the program
 db.setup_database()
-bot.run(CFGPARSER['Settings']['Token'])
+bot.run(token)
 
 
 # Error handler for auto_role function

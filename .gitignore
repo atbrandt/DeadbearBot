@@ -40,4 +40,5 @@ __pycache__
 
 # Files needed for operation #
 ######################
-init.cfg
+*.yml
+*.env

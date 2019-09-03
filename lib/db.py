@@ -18,7 +18,7 @@ def setup_database():
 
     # Set database to use Write Ahead Log for concurrency
     c.execute("PRAGMA journal_mode=WAL")
-
+    
     c.execute("""
     CREATE TABLE IF NOT EXISTS reaction_role_hooks (
         id INTEGER PRIMARY KEY,
