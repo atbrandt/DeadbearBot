@@ -1,4 +1,5 @@
 import sqlite3
+from uuid import uuid4
 from pathlib import Path
 
 
@@ -18,242 +19,257 @@ def setup_database():
 
     # Set database to use Write Ahead Log for concurrency
     c.execute("PRAGMA journal_mode=WAL")
-    
+
     c.execute("""
-    CREATE TABLE IF NOT EXISTS reaction_role_hooks (
+    CREATE TABLE IF NOT EXISTS guilds (
+        id INTEGER PRIMARY KEY UNIQUE,
+        bot_alias TEXT,
+        auto_role INTEGER,
+        greet_channel INTEGER,
+        greet_message TEXT,
+        bye_channel INTEGER,
+        bye_message TEXT
+    );""")
+
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS members (
         id INTEGER PRIMARY KEY,
-        channel_message_id INTEGER UNIQUE
+        guild_id INTEGER,
+        member_id INTEGER,
+        created_at INTEGER,
+        joined_at INTEGER,
+        level INTEGER,
+        xp INTEGER,
+        cash INTEGER,
+        FOREIGN KEY (guild_id) REFERENCES guilds (id)
     );""")
 
     c.execute("""
     CREATE TABLE IF NOT EXISTS reaction_roles (
-        id INTEGER PRIMARY KEY,
+        uuid TEXT PRIMARY KEY UNIQUE,
+        guild_id INTEGER,
+        hook_id TEXT,
         emoji TEXT,
         role_id INTEGER,
-        hook_id INTEGER NOT NULL,
-        FOREIGN KEY (hook_id) REFERENCES reaction_role_hooks (id)
+        FOREIGN KEY (guild_id) REFERENCES guilds (id)
     );""")
 
     c.execute("""
     CREATE TABLE IF NOT EXISTS voice_roles (
-        id INTEGER PRIMARY KEY,
-        vchannel_id INTEGER UNIQUE,
-        role_id INTEGER
-    );""")
-
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY,
-        experience INTEGER
-    );""")
-
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS items (
-        id INTEGER PRIMARY KEY,
-        name TEXT UNIQUE,
-        description TEXT
-    );""")
-
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS user_items (
-        id INTEGER PRIMARY KEY,
-        user_id INTEGER,
-        item_id INTEGER,
-        FOREIGN KEY (user_id) REFERENCES users (id),
-        FOREIGN KEY (item_id) REFERENCES items (id)
+        uuid TEXT PRIMARY KEY UNIQUE,
+        guild_id INTEGER,
+        hook_id INTEGER,
+        role_id INTEGER,
+        FOREIGN KEY (guild_id) REFERENCES guilds (id)
     );""")
 
     conn.commit()
 
 
-# Returns all items in Item table
-def get_all_items():
+# Adds a guild to the guilds table
+def add_guild(guildID):
     c = conn.cursor()
     c.execute("""
-    SELECT *
-    FROM items;""")
-    return c.fetchall()
-
-
-# Finds an item in Item table by its name and returns it
-def get_item(name):
-    c = conn.cursor()
-    c.execute("""
-    SELECT id, name, description
-    FROM items
-    WHERE name = ? COLLATE NOCASE LIMIT 1;""", (name,))
-    return c.fetchall()
-
-
-# Create an item
-def create_item(name, description):
-    c = conn.cursor()
-    c.execute("""
-    INSERT INTO items (
-        name,
-        description
+    INSERT OR IGNORE INTO guilds (
+        id
     )
-    VALUES (
-        ?,
-        ?
-    );""", (name, description,))
+    VALUES
+        (?);""", (guildID,))
     conn.commit()
 
 
-# Gives an item to a user
-def give_item(userId, itemId):
-    c = conn.cursor()
-    c.execute("""
-    INSERT INTO user_items (
-        user_id,
-        item_id
-    )
-    VALUES (
-        ?,
-        ?
-    );""", (userId, itemId,))
-    conn.commit()
-
-
-# Returns all reaction role hooks
-def get_all_hooks():
+# Returns a guild's config option from the guilds table
+def get_cfg(guildID, option):
     c = conn.cursor()
     c.execute("""
     SELECT *
-    FROM reaction_role_hooks;""")
+    FROM guilds
+    WHERE id = ?;""", (guildID,))
+    return c.fetchone()[option]
+    
+
+# Sets a config option for a guild in the guilds table
+def set_cfg(guildID, option, value):
+    c = conn.cursor()
+    c.execute(f"""
+    UPDATE guilds
+    SET {option} = ?
+    WHERE id = ?;""", (value,guildID,))
+    conn.commit()
+
+
+# Resets a guild's config values to default
+def clear_cfg(guildID):
+    c = conn.cursor()
+    c.execute("""
+    UPDATE guilds
+    SET bot_alias = NULL,
+        auto_role = NULL,
+        greet_channel = NULL,
+        greet_message = NULL,
+        bye_channel = NULL,
+        bye_message = NULL
+    WHERE id = ?;""", (guildID,))
+    conn.commit()
+
+
+# Adds a member to the members table
+def add_member(guildID, memberID, created, joined):
+    c = conn.cursor()
+    c.execute("""
+    INSERT OR IGNORE INTO members (
+        guild_id,
+        member_id,
+        created_at,
+        joined_at,
+        level,
+        xp,
+        cash
+    )
+    VALUES
+        (?, ?, ?, ?, ?, ?, ?);""", (guildID,memberID,created,joined,0,0,0,))
+    conn.commit()
+
+
+# Returns all members of a given guild
+def get_all_members(guildID):
+    c = conn.cursor()
+    c.execute("""
+    SELECT member_id
+    FROM members
+    WHERE guild_id = ?;""", (guildID,))
     return c.fetchall()
 
 
-# Returns a reaction role hook by message_id
-def get_hook_by_message(chnlmsgID):
+# Returns a specific member of a given guild
+def get_member(guildID, memberID):
     c = conn.cursor()
     c.execute("""
-    SELECT *
-    FROM reaction_role_hooks
-    WHERE channel_message_id = ?;""", (chnlmsgID,))
+    SELECT level, xp, cash
+    FROM members
+    WHERE guild_id = ?
+    AND member_id = ?;""", (guildID,memberID,))
     return c.fetchone()
 
 
-# Returns a reaction role hook by message_id
-def get_hook_by_id(hookID):
+# Updates a specific member of a given guild
+def set_member(guildID, memberID, level, xp, cash):
     c = conn.cursor()
     c.execute("""
-    SELECT *
-    FROM reaction_role_hooks
-    WHERE id = ?;""", (hookID,))
-    return c.fetchone()
-
-
-# Adds a reaction role hook to database
-def add_reaction_role_hook(chnlmsgID):
-    c = conn.cursor()
-    c.execute("""
-    INSERT INTO reaction_role_hooks (
-        channel_message_id
-    )
-    VALUES (
-        ?
-    );""", (chnlmsgID,))
-    conn.commit()
-    return c.lastrowid
-
-
-# Deletes a reaction role hook and all associated reaction roles
-def delete_reaction_role_hook(rrID):
-    c = conn.cursor()
-    c.execute("""
-    DELETE FROM reaction_role_hooks
-    WHERE id = ?;""", (rrID,))
-    c.execute("""
-    DELETE FROM reaction_roles
-    WHERE hook_id = ?;""", (rrID,))
+    UPDATE members
+    SET level = ?,
+        xp = ?,
+        cash = ?
+    WHERE guild_id = ?
+    AND member_id = ?;""", (level,xp,cash,guildID,memberID,))
     conn.commit()
 
 
-# Returns all reaction roles
-def get_all_reaction_roles():
+# Returns all reaction roles of a given guild
+def get_reaction_roles(guildID):
     c = conn.cursor()
     c.execute("""
-    SELECT *
-    FROM reaction_roles;""")
-    return c.fetchall()
-
-
-# Get reaction role entry by emoji and hook_id
-def get_reaction_role(hookID, emoji):
-    c = conn.cursor()
-    c.execute("""
-    SELECT *
+    SELECT uuid, hook_id, emoji, role_id
     FROM reaction_roles
-    WHERE hook_id = ? AND emoji = ?;""", (hookID, emoji,))
-    return c.fetchone()
+    WHERE guild_id = ?;""", (guildID,))
+    return c.fetchall()
 
 
-# Adds a reaction role to database
-def add_reaction_role(emoji, roleID, hookID):
+# Adds a reaction role to database, excepting on exact duplicates
+def add_reaction_role(guildID, hookID, emoji, roleID):
     c = conn.cursor()
     c.execute("""
-    INSERT INTO reaction_roles (
-        emoji,
-        role_id,
-        hook_id
-    )
-    VALUES (
-        ?,
-        ?,
-        ?
-    );""", (emoji, roleID, hookID,))
-    conn.commit()
-    return c.lastrowid
+    SELECT uuid, hook_id, emoji, role_id
+    FROM reaction_roles
+    WHERE hook_id = ?
+    AND emoji = ?
+    AND role_id = ?;""", (hookID,emoji,roleID,))
+    check = c.fetchone()
+    if not check:
+        uniqueID = str(uuid4())
+        c.execute("""
+        INSERT INTO reaction_roles (
+            uuid,
+            guild_id,
+            hook_id,
+            emoji,
+            role_id
+        )
+        VALUES
+            (?, ?, ?, ?, ?);""", (uniqueID,guildID,hookID,emoji,roleID,))
+        conn.commit()
+        return (False, uniqueID)
+    else:
+        return (True, check['uuid'])
 
 
-# Removes a reaction role from database
+# Removes a reaction role from database by its unique ID, if it exists
 def delete_reaction_role(rrID):
     c = conn.cursor()
     c.execute("""
-    DELETE FROM reaction_roles
-    WHERE id = ?;""", (rrID,))
-    conn.commit()
+    SELECT uuid
+    FROM reaction_roles
+    WHERE uuid = ?;""", (rrID,))
+    check = c.fetchone()
+    if check:
+        c.execute("""
+        DELETE FROM reaction_roles
+        WHERE uuid = ?;""", (rrID,))
+        conn.commit()
+        return True
+    else:
+        return False
 
 
-# Returns all voice chat roles
-def get_all_voice_channel_roles():
+# Returns all voice roles for a given guild
+def get_voice_roles(guildID):
     c = conn.cursor()
     c.execute("""
-    SELECT *
-    FROM voice_roles;""")
+    SELECT uuid, hook_id, role_id
+    FROM voice_roles
+    WHERE guild_id = ?;""", (guildID,))
     return c.fetchall()
 
 
-# Returns a voice chat role by vchannel_id
-def get_voice_channel_role(vchannelID):
+# Adds a voice role to database, excepting on exact duplicates
+def add_voice_role(guildID, hookID, roleID):
     c = conn.cursor()
     c.execute("""
-    SELECT *
+    SELECT uuid, hook_id, role_id
     FROM voice_roles
-    WHERE vchannel_id = ?;""", (vchannelID,))
-    return c.fetchone()
+    WHERE hook_id = ?
+    AND role_id = ?;""", (hookID,roleID,))
+    check = c.fetchone()
+    if not check:
+        uniqueID = str(uuid4())
+        c.execute("""
+        INSERT INTO voice_roles (
+            uuid,
+            guild_id,
+            hook_id,
+            role_id
+        )
+        VALUES
+            (?, ?, ?, ?);""", (uniqueID,guildID,hookID,roleID,))
+        conn.commit()
+        return (False, uniqueID)
+    else:
+        return (True, check['uuid'])
 
 
-# Adds a voice chat role to database
-def add_voice_channel_role(vchannelID, roleID):
+# Removes a voice role from database by its unique ID, if it exists
+def delete_voice_role(vrID):
     c = conn.cursor()
     c.execute("""
-    INSERT INTO voice_roles (
-        vchannel_id,
-        role_id
-    )
-    VALUES (
-        ?,
-        ?
-    );""", (vchannelID, roleID,))
-    conn.commit()
-
-
-# Removes a voice chat role from database
-def delete_voice_channel_role(vcrID):
-    c = conn.cursor()
-    c.execute("""
-    DELETE FROM voice_roles
-    WHERE id = ?;""", (vcrID,))
-    conn.commit()
+    SELECT uuid
+    FROM voice_roles
+    WHERE uuid = ?;""", (rrID,))
+    check = c.fetchone()
+    if check:
+        c.execute("""
+        DELETE FROM voice_roles
+        WHERE uuid = ?;""", (rrID,))
+        conn.commit()
+        return True
+    else:
+        return False
