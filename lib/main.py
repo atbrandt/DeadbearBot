@@ -411,18 +411,17 @@ async def on_member_remove(member):
 @bot.event
 async def on_message(message):
     member = message.author
-    if member.id == bot.user.id:
-        return
-
-    guild = message.guild
-    profile = db.get_member(guild.id, member.id)
-    xp = profile['xp'] + 1
-    level = xp // 25
-    if level > profile['level']:
-        channel = message.channel
-        await channel.send(f"**{member.name}** has leveled up to **level "
-                           f"{level}!**")
-    db.set_member(guild.id, member.id, level, xp, profile['cash'])
+    if member.id != bot.user.id:
+        guild = message.guild
+        profile = db.get_member(guild.id, member.id)
+        xp = profile['xp'] + 1
+        level = xp // 25
+        if level > profile['level']:
+            channel = message.channel
+            await channel.send(f"**{member.name}** has leveled up to **level "
+                               f"{level}!**")
+        db.set_member(guild.id, member.id, level, xp, profile['cash'])
+    await bot.process_commands(message)
 
 
 # Global error handler as temp solution

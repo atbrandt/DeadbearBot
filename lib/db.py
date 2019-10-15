@@ -63,6 +63,14 @@ def setup_database():
         FOREIGN KEY (guild_id) REFERENCES guilds (id)
     );""")
 
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS blurbs (
+        uuid TEXT PRIMARY KEY UNIQUE,
+        command TEXT UNIQUE,
+        message TEXT,
+        FOREIGN KEY (guild_id) REFERENCES guilds (id)
+    );""")
+
     conn.commit()
 
 
