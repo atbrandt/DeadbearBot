@@ -26,12 +26,12 @@ else:
 
 # Create callable to obtain guild-specific alias for command prefix
 async def get_alias(bot, message):
-    guild = message.guild.id
-    prefix = db.get_cfg(guild, 'bot_alias')
-    if prefix != None:
-        return prefix
-    else:
-        return "-"
+    if message.guild:
+        guild = message.guild.id
+        prefix = db.get_cfg(guild, 'bot_alias')
+        if prefix != None:
+            return prefix
+    return "-"
 
 
 # Set up the bot and get the command prefix alias
@@ -145,7 +145,7 @@ async def guild_greet_channel(ctx):
              brief="Modify greet message.",
              aliases=["ggmsg"])
 @commands.is_owner()
-async def guild_greet_message(ctx, message):
+async def guild_greet_message(ctx, *, message: str):
     db.set_cfg(ctx.guild.id, "greet_message", message)
     await ctx.channel.send(f"The greet message is now: \"{message}\"")
 
@@ -177,7 +177,7 @@ async def guild_farewell_channel(ctx):
              brief="Modify greet message.",
              aliases=["glmsg"])
 @commands.is_owner()
-async def guild_farewell_message(ctx, message):
+async def guild_farewell_message(ctx, *, message: str):
     db.set_cfg(ctx.guild.id, "bye_message", message)
     await ctx.channel.send(f"The leave message is now: \"{message}\"")
 
@@ -277,6 +277,30 @@ async def delete_vr(ctx, vrID):
 async def list_vr(ctx):
     roles = dict(db.get_voice_roles(ctx.guild.id))
     await ctx.channel.send(roles)
+
+
+# Command to fill out profile info via DM
+@bot.command(name='EditProfile',
+             description="Edit your member profile information.",
+             brief="Edit profile information.",
+             aliases=['profile'])
+@commands.is_owner()
+async def edit_profile(ctx):
+    await ctx.author.send("What profile option would you like to change? "
+                          "Enter the number of an option listed below."
+                          "\n1. Name\n2. Nickname\n3. Age\n4. Gender"
+                          "\n5. Location\n6. Description\n7. Likes"
+                          "\n8. Dislikes")
+
+
+# Command to fill out profile info via DM
+@bot.command(name='Shutdown',
+             description="Shut down the bot and close all connections.",
+             brief="Shut down the bot.",
+             aliases=['die'])
+@commands.is_owner()
+async def shutdown(ctx):
+    await bot.logout()
 
 
 # Get list of roles (with IDs) on guild
@@ -381,7 +405,6 @@ async def on_voice_state_update(member, before, after):
 async def on_member_join(member):
     guildID = member.guild.id
     db.add_member(guildID, member.id, member.created_at, member.joined_at)
-    print(f"Member {member.id} has been logged.")
     
     autorole = db.get_cfg(guildID, "auto_role")
     if autorole is not None:
@@ -410,17 +433,27 @@ async def on_member_remove(member):
 # Do stuff when members send messages
 @bot.event
 async def on_message(message):
-    member = message.author
-    if member.id != bot.user.id:
+    if message.author.id == bot.user.id:
+        await bot.process_commands(message)
+        return
+
+    if str(message.channel.type) == 'private':
+        DMchannel = message.channel
+        messages = await DMchannel.history(limit=2).flatten()
+        if messages[1].bot:
+            return
+    else:
+        member = message.author
         guild = message.guild
-        profile = db.get_member(guild.id, member.id)
+        profile = db.get_member_stats(guild.id, member.id)
         xp = profile['xp'] + 1
         level = xp // 25
         if level > profile['level']:
             channel = message.channel
             await channel.send(f"**{member.name}** has leveled up to **level "
                                f"{level}!**")
-        db.set_member(guild.id, member.id, level, xp, profile['cash'])
+        db.set_member_stats(guild.id, member.id, level, xp, profile['cash'])
+
     await bot.process_commands(message)
 
 
@@ -437,6 +470,12 @@ async def on_command_error(ctx, error):
 #        await ctx.channel.send("You need to include a role name or ID!")
 #    if isinstance(error, commands.CommandError):
 #        await ctx.channel.send("Och! Something wrong! Don't worry \;\)")
+
+
+# Make the bot ignore commands until fully initialized
+@bot.event
+async def on_connect():
+    await bot.wait_until_ready()
 
 
 # Output info to console once bot is initialized and ready

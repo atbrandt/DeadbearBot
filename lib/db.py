@@ -41,6 +41,14 @@ def setup_database():
         level INTEGER,
         xp INTEGER,
         cash INTEGER,
+        name TEXT,
+        nickname TEXT,
+        birthday INTEGER,
+        gender TEXT,
+        location TEXT,
+        description TEXT,
+        likes TEXT,
+        dislikes TEXT,
         FOREIGN KEY (guild_id) REFERENCES guilds (id)
     );""")
 
@@ -66,6 +74,7 @@ def setup_database():
     c.execute("""
     CREATE TABLE IF NOT EXISTS blurbs (
         uuid TEXT PRIMARY KEY UNIQUE,
+        guild_id INTEGER,
         command TEXT UNIQUE,
         message TEXT,
         FOREIGN KEY (guild_id) REFERENCES guilds (id)
@@ -150,7 +159,7 @@ def get_all_members(guildID):
 
 
 # Returns a specific member of a given guild
-def get_member(guildID, memberID):
+def get_member_stats(guildID, memberID):
     c = conn.cursor()
     c.execute("""
     SELECT level, xp, cash
@@ -161,7 +170,7 @@ def get_member(guildID, memberID):
 
 
 # Updates a specific member of a given guild
-def set_member(guildID, memberID, level, xp, cash):
+def set_member_stats(guildID, memberID, level, xp, cash):
     c = conn.cursor()
     c.execute("""
     UPDATE members
