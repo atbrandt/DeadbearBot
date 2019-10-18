@@ -37,7 +37,7 @@ def setup_database():
         guild_id INTEGER,
         member_id INTEGER,
         created_at INTEGER,
-        joined_at INTEGER,
+        joined_at INTEGER UNIQUE,
         level INTEGER,
         xp INTEGER,
         cash INTEGER,
@@ -77,6 +77,16 @@ def setup_database():
         guild_id INTEGER,
         command TEXT UNIQUE,
         message TEXT,
+        FOREIGN KEY (guild_id) REFERENCES guilds (id)
+    );""")
+
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS temp (
+        id INTEGER PRIMARY KEY,
+        guild_id INTEGER,
+        member_id INTEGER UNIQUE,
+        menu TEXT,
+        selected TEXT,
         FOREIGN KEY (guild_id) REFERENCES guilds (id)
     );""")
 
@@ -138,13 +148,10 @@ def add_member(guildID, memberID, created, joined):
         guild_id,
         member_id,
         created_at,
-        joined_at,
-        level,
-        xp,
-        cash
+        joined_at
     )
     VALUES
-        (?, ?, ?, ?, ?, ?, ?);""", (guildID,memberID,created,joined,0,0,0,))
+        (?, ?, ?, ?);""", (guildID,memberID,created,joined,))
     conn.commit()
 
 
@@ -179,6 +186,17 @@ def set_member_stats(guildID, memberID, level, xp, cash):
         cash = ?
     WHERE guild_id = ?
     AND member_id = ?;""", (level,xp,cash,guildID,memberID,))
+    conn.commit()
+
+
+# Updates a specific member of a given guild
+def set_member_profile(guildID, memberID, option, value):
+    c = conn.cursor()
+    c.execute(f"""
+    UPDATE members
+    SET {option} = ?
+    WHERE guild_id = ?
+    AND member_id = ?;""", (value,guildID,memberID,))
     conn.commit()
 
 
@@ -290,3 +308,46 @@ def delete_voice_role(vrID):
         return True
     else:
         return False
+
+
+# Set temp data in case the bot goes down mid-process
+def set_temp(guildID, memberID, menu):
+    c = conn.cursor()
+    c.execute("""
+    INSERT OR REPLACE INTO temp (
+        guild_id,
+        member_id,
+        menu
+    )
+    VALUES
+        (?, ?, ?);""", (guildID,memberID,menu,))
+    conn.commit()
+
+
+# Update the menu layer a user is currently on
+def update_temp(memberID, selected):
+    c = conn.cursor()
+    c.execute("""
+    UPDATE temp
+    SET selected = ?
+    WHERE member_id = ?;""", (selected,memberID,))
+
+
+# Get temp data
+def get_temp(memberID):
+    c = conn.cursor()
+    c.execute("""
+    SELECT *
+    FROM temp
+    WHERE member_id = ?;""", (memberID,))
+    return c.fetchone()
+
+
+# Delete temp data when finished
+def del_temp(memberID):
+    c = conn.cursor()
+    c.execute("""
+    DELETE FROM temp
+    WHERE member_id = ?;""", (memberID,))
+    conn.commit()
+
