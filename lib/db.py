@@ -28,7 +28,8 @@ def setup_database():
         greet_channel INTEGER,
         greet_message TEXT,
         bye_channel INTEGER,
-        bye_message TEXT
+        bye_message TEXT,
+        perm_role INTEGER
     );""")
 
     c.execute("""
@@ -37,10 +38,18 @@ def setup_database():
         guild_id INTEGER,
         member_id INTEGER,
         created_at INTEGER,
-        joined_at INTEGER,
+        joined_at INTEGER UNIQUE,
         level INTEGER,
         xp INTEGER,
         cash INTEGER,
+        name TEXT,
+        nickname TEXT,
+        birthday INTEGER,
+        gender TEXT,
+        location TEXT,
+        description TEXT,
+        likes TEXT,
+        dislikes TEXT,
         FOREIGN KEY (guild_id) REFERENCES guilds (id)
     );""")
 
@@ -66,8 +75,19 @@ def setup_database():
     c.execute("""
     CREATE TABLE IF NOT EXISTS blurbs (
         uuid TEXT PRIMARY KEY UNIQUE,
+        guild_id INTEGER,
         command TEXT UNIQUE,
         message TEXT,
+        FOREIGN KEY (guild_id) REFERENCES guilds (id)
+    );""")
+
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS temp (
+        id INTEGER PRIMARY KEY,
+        guild_id INTEGER,
+        member_id INTEGER UNIQUE,
+        menu TEXT,
+        selected TEXT,
         FOREIGN KEY (guild_id) REFERENCES guilds (id)
     );""")
 
@@ -150,10 +170,10 @@ def get_all_members(guildID):
 
 
 # Returns a specific member of a given guild
-def get_member(guildID, memberID):
+def get_member_profile(guildID, memberID):
     c = conn.cursor()
     c.execute("""
-    SELECT level, xp, cash
+    SELECT *
     FROM members
     WHERE guild_id = ?
     AND member_id = ?;""", (guildID,memberID,))
@@ -161,16 +181,90 @@ def get_member(guildID, memberID):
 
 
 # Updates a specific member of a given guild
-def set_member(guildID, memberID, level, xp, cash):
+def set_member_stats(guildID, memberID, lvl, xp):         
     c = conn.cursor()
     c.execute("""
     UPDATE members
     SET level = ?,
-        xp = ?,
-        cash = ?
+        xp = ?
     WHERE guild_id = ?
-    AND member_id = ?;""", (level,xp,cash,guildID,memberID,))
+    AND member_id = ?;""", (lvl,xp,guildID,memberID,))
     conn.commit()
+
+
+# Updates a specific member of a given guild
+def set_member_profile(guildID, memberID, option, value):
+    if option == "name":
+        c = conn.cursor()
+        c.execute("""
+        UPDATE members
+        SET name = ?
+        WHERE guild_id = ?
+        AND member_id = ?;""", (value,guildID,memberID,))
+        conn.commit()
+
+    if option == "nickname":
+        c = conn.cursor()
+        c.execute("""
+        UPDATE members
+        SET nickname = ?
+        WHERE guild_id = ?
+        AND member_id = ?;""", (value,guildID,memberID,))
+        conn.commit()
+
+    if option == "birthday":
+        c = conn.cursor()
+        c.execute("""
+        UPDATE members
+        SET birthday = ?
+        WHERE guild_id = ?
+        AND member_id = ?;""", (value,guildID,memberID,))
+        conn.commit()
+
+    if option == "gender":
+        c = conn.cursor()
+        c.execute("""
+        UPDATE members
+        SET gender = ?
+        WHERE guild_id = ?
+        AND member_id = ?;""", (value,guildID,memberID,))
+        conn.commit()
+
+    if option == "location":
+        c = conn.cursor()
+        c.execute("""
+        UPDATE members
+        SET location = ?
+        WHERE guild_id = ?
+        AND member_id = ?;""", (value,guildID,memberID,))
+        conn.commit()
+
+    if option == "description":
+        c = conn.cursor()
+        c.execute("""
+        UPDATE members
+        SET description = ?
+        WHERE guild_id = ?
+        AND member_id = ?;""", (value,guildID,memberID,))
+        conn.commit()
+
+    if option == "likes":
+        c = conn.cursor()
+        c.execute("""
+        UPDATE members
+        SET likes = ?
+        WHERE guild_id = ?
+        AND member_id = ?;""", (value,guildID,memberID,))
+        conn.commit()
+
+    if option == "dislikes":
+        c = conn.cursor()
+        c.execute("""
+        UPDATE members
+        SET dislikes = ?
+        WHERE guild_id = ?
+        AND member_id = ?;""", (value,guildID,memberID,))
+        conn.commit()
 
 
 # Returns all reaction roles of a given guild
@@ -281,3 +375,46 @@ def delete_voice_role(vrID):
         return True
     else:
         return False
+
+
+# Set temp data in case the bot goes down mid-process
+def set_temp(guildID, memberID, menu):
+    c = conn.cursor()
+    c.execute("""
+    INSERT OR REPLACE INTO temp (
+        guild_id,
+        member_id,
+        menu
+    )
+    VALUES
+        (?, ?, ?);""", (guildID,memberID,menu,))
+    conn.commit()
+
+
+# Update the menu layer a user is currently on
+def update_temp(memberID, selected):
+    c = conn.cursor()
+    c.execute("""
+    UPDATE temp
+    SET selected = ?
+    WHERE member_id = ?;""", (selected,memberID,))
+
+
+# Get temp data
+def get_temp(memberID):
+    c = conn.cursor()
+    c.execute("""
+    SELECT *
+    FROM temp
+    WHERE member_id = ?;""", (memberID,))
+    return c.fetchone()
+
+
+# Delete temp data when finished
+def del_temp(memberID):
+    c = conn.cursor()
+    c.execute("""
+    DELETE FROM temp
+    WHERE member_id = ?;""", (memberID,))
+    conn.commit()
+
