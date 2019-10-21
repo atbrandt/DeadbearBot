@@ -439,6 +439,7 @@ async def profile(ctx, member: discord.Member=None):
 async def profile_edit(ctx):
     await ctx.author.send(embed=ProfileMenu.embedded())
     db.set_temp(ctx.guild.id, ctx.author.id, ProfileMenu.title)
+    await ctx.channel.send("Check your messages, I just sent you a DM!")
 
 
 # Get list of roles (with IDs) on guild
