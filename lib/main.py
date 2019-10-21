@@ -411,7 +411,7 @@ async def profile(ctx, member: discord.Member=None):
               "Location": f"{dbprof['location']}",
               "Description": f"{dbprof['description']}",
               "Likes": f"{dbprof['likes']}",
-              "Dislikes": f"{dbprof['dislikes']}",}
+              "Dislikes": f"{dbprof['dislikes']}"}
     empty = fields.copy()
     for k, v in empty.items():
         if v == "None":
@@ -609,8 +609,10 @@ async def private_message_handler(message):
             member = temp['member_id']
             if message.content.lower() == "clear":
                 db.set_member_profile(guild, member, option['dbval'], None)
-                db.del_temp(member)
-                await message.channel.send("Option cleared!")
+                db.update_temp(message.author.id, None)
+                await message.channel.send("Option cleared! Enter another "
+                                           "number to continue or send `exit` " 
+                                           "to quit.")
                 return
             if len(message.content) <= option['chars']:
                 if option['format'] == "list":
@@ -621,11 +623,13 @@ async def private_message_handler(message):
                         setting = message.content
                     except ValueError:
                         await message.channel.send("Date formatted wrong!")
+                        return
                 else:
                     setting = message.content
                 db.set_member_profile(guild, member, option['dbval'], setting)
-                db.del_temp(member)
-                await message.channel.send("Option set!")
+                db.update_temp(message.author.id, None)
+                await message.channel.send("Set! Enter another number to "
+                                           "continue or send `exit` to quit.")
             else:
                 await message.channel.send("Over character limit!")
 
