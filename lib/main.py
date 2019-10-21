@@ -1,4 +1,5 @@
-import os, math, datetime
+import os, math
+from datetime import datetime, date
 from typing import Union
 from pathlib import Path
 from dotenv import load_dotenv
@@ -396,9 +397,9 @@ async def profile(ctx, member: discord.Member=None):
         dbprof = db.get_member_profile(ctx.guild.id, ctx.author.id)
         member = ctx.author
     if dbprof['birthday'] is not None:
-        born = datetime.datetime.fromisoformat(dbprof['birthday'])
-        today = datetime.date.today()
-        age = today.year - born.year - ((today.month, today.day) < (born.month, born.day))
+        born = datetime.strptime(dbprof['birthday'], "%Y-%m-%d")
+        now = date.today()
+        age = now.year-born.year-((now.month, now.day)<(born.month, born.day))
     else:
         age = None
     fields = {"Total XP": f"{dbprof['xp']} XP",
