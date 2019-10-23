@@ -118,12 +118,61 @@ def get_cfg(guildID, option):
 
 # Sets a config option for a guild in the guilds table
 def set_cfg(guildID, option, value):
-    c = conn.cursor()
-    c.execute(f"""
-    UPDATE guilds
-    SET {option} = ?
-    WHERE id = ?;""", (value,guildID,))
-    conn.commit()
+    if option == "bot_alias":
+        c = conn.cursor()
+        c.execute("""
+        UPDATE guilds
+        SET bot_alias = ?
+        WHERE id = ?;""", (value,guildID,))
+        conn.commit()
+
+    if option == "auto_role":
+        c = conn.cursor()
+        c.execute("""
+        UPDATE guilds
+        SET auto_role = ?
+        WHERE id = ?;""", (value,guildID,))
+        conn.commit()
+
+    if option == "greet_channel":
+        c = conn.cursor()
+        c.execute("""
+        UPDATE guilds
+        SET greet_channel = ?
+        WHERE id = ?;""", (value,guildID,))
+        conn.commit()
+
+    if option == "greet_message":
+        c = conn.cursor()
+        c.execute("""
+        UPDATE guilds
+        SET greet_message = ?
+        WHERE id = ?;""", (value,guildID,))
+        conn.commit()
+
+    if option == "bye_channel":
+        c = conn.cursor()
+        c.execute("""
+        UPDATE guilds
+        SET bye_channel = ?
+        WHERE id = ?;""", (value,guildID,))
+        conn.commit()
+
+    if option == "bye_message":
+        c = conn.cursor()
+        c.execute("""
+        UPDATE guilds
+        SET bye_message = ?
+        WHERE id = ?;""", (value,guildID,))
+        conn.commit()
+
+    if option == "perm_role":
+        c = conn.cursor()
+        c.execute("""
+        UPDATE guilds
+        SET bperm_role = ?
+        WHERE id = ?;""", (value,guildID,))
+        conn.commit()
 
 
 # Resets a guild's config values to default
@@ -136,7 +185,8 @@ def clear_cfg(guildID):
         greet_channel = NULL,
         greet_message = NULL,
         bye_channel = NULL,
-        bye_message = NULL
+        bye_message = NULL,
+        perm_role = NULL
     WHERE id = ?;""", (guildID,))
     conn.commit()
 

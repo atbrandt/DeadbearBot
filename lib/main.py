@@ -101,7 +101,9 @@ pfields = [{"fname": "1. Name",
            "dbval": "nickname"},
            {"fname": "3. Age",
            "fdesc": "Your age, if you want it known.",
-           "prompt": "Submit a date in the format `YYYY-MM-DD`, or send `clear` to reset.\nNote that this date will *not* show up on your profile, it's just used to calculate age.",
+           "prompt": "Submit a date in the format `YYYY-MM-DD`, or send "
+           "`clear` to reset.\nNote that this date will *not* show up on your "
+           "profile, it's just used to calculate age.",
            "chars": 10,
            "format": "date",
            "dbval": "birthday"},
@@ -125,13 +127,15 @@ pfields = [{"fname": "1. Name",
            "dbval": "description"},
            {"fname": "7. Likes",
            "fdesc": "A list of all the things you like.",
-           "prompt": "Submit items separated by commas, or send `clear` to reset.",
+           "prompt": "Submit items, separated by commas, or send `clear` to "
+           "reset.",
            "chars": 1024,
            "format": "list",
            "dbval": "likes"},
            {"fname": "8. Dislikes",
            "fdesc": "A list of all the things you hate.",
-           "prompt": "Submit items separated by commas, or send `clear` to reset.",
+           "prompt": "Submit items separated by commas, or send `clear` to "
+           "reset.",
            "chars": 1024,
            "format": "list",
            "dbval": "dislikes"}]
@@ -297,7 +301,6 @@ async def add_rr(ctx, message: discord.Message,
         exists, rrID = db.add_reaction_role(guildID, hookID, emoji, role.id)
     else:
         exists, rrID = db.add_reaction_role(guildID, hookID, emoji.id, role.id)
-
     if not exists:
         await message.add_reaction(emoji)
         await ctx.channel.send(f"Set \"{emoji}\" to give the \"{role.name}\" " 
@@ -402,30 +405,48 @@ async def profile(ctx, member: discord.Member=None):
         age = now.year-born.year-((now.month, now.day)<(born.month, born.day))
     else:
         age = None
-    fields = {"Total XP": f"{dbprof['xp']} XP",
-              "Cash On Hand": f"${dbprof['cash']}",
-              "Name": f"{dbprof['name']}",
-              "Nickname": f"{dbprof['nickname']}",
-              "Age": f"{age}",
-              "Gender": f"{dbprof['gender']}",
-              "Location": f"{dbprof['location']}",
-              "Description": f"{dbprof['description']}",
-              "Likes": f"{dbprof['likes']}",
-              "Dislikes": f"{dbprof['dislikes']}"}
+    fields = [{"title": "Total XP",
+               "data": f"{dbprof['xp']} XP",
+               "inline": True},
+              {"title": "Cash On Hand",
+               "data": f"${dbprof['cash']}",
+               "inline": True},
+              {"title": "Name",
+               "data": dbprof['name'],
+               "inline": True},
+              {"title": "Nickname",
+               "data": dbprof['nickname'],
+               "inline": True},
+              {"title": "Age",
+               "data": age,
+               "inline": True},
+              {"title": "Gender",
+               "data": dbprof['gender'],
+               "inline": True},
+              {"title": "Location",
+               "data": dbprof['location'],
+               "inline": True},
+              {"title": "Description",
+               "data": dbprof['description'],
+               "inline": False},
+              {"title": "Likes",
+               "data": dbprof['likes'],
+               "inline": True},
+              {"title": "Dislikes",
+               "data": dbprof['dislikes'],
+               "inline": True}]
     empty = fields.copy()
-    for k, v in empty.items():
-        if v == "None":
-            fields.pop(k)
+    for i in empty:
+        if i["data"] == None:
+            fields.remove(i)
+    print(fields)
     embtitle = f"Level: **{dbprof['level']}**"
     embdesc = f"Member of *{ctx.guild.name}*"
     profile = discord.Embed(title=embtitle, description=embdesc)
     profile.set_author(name=member.name)
     profile.set_thumbnail(url=member.avatar_url)
-    for k, v in fields.items():
-        if v == None:
-            profile.add_field(name=k)
-        else:
-            profile.add_field(name=k, value=v)
+    for i in fields:
+        profile.add_field(name="title", value="data", inline="inline")
     await ctx.channel.send(embed=profile)
 
 
