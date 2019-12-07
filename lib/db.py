@@ -60,11 +60,10 @@ def add_guild(guildID):
     c = conn.cursor()
     c.execute("""
     INSERT OR IGNORE INTO guilds (
-        id,
-        guild_stats
+        id
     )
     VALUES
-        (?,?);""", (guildID,'enabled',))
+        (?);""", (guildID,))
     conn.commit()
 
 
@@ -167,7 +166,7 @@ def clear_cfg(guildID):
     c.execute("""
     UPDATE guilds
     SET bot_alias = NULL,
-        guild_stats = NULL,
+        star_channel = NULL,
         auto_role = NULL,
         join_channel = NULL,
         join_message = NULL,
