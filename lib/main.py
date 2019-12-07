@@ -617,6 +617,47 @@ async def on_raw_reaction_remove(payload):
                     await member.remove_roles(role, reason="ReactionRole")
 
 
+# Starboard handler
+async def starboard(message):
+    channelID = db.get_cfg(message.guild.id, 'star_channel')
+    if not channelID:
+        return
+    channel = message.guild.get_channel(channelID)
+    threshold = db.get_cfg(message.guild.id, 'star_threshold')
+    reacts = message.reactions
+    emote = next((item for item in reacts if item.emoji == u'\U0001F31F'), 0)
+    if emote:
+        count = emote.count
+    else:
+        count = 0
+    starred = db.get_starred(message.id)
+    if not starred and count >= threshold:
+        embed = discord.Embed(description=message.content)
+        if message.embeds:
+            data = message.embeds[0]
+            if data.type == 'image':
+                embed.set_thumbnail(url=data.url)
+        if message.attachments:
+            file = message.attachments[0]
+            if file.url.lower().endswith(('png', 'jpeg', 'jpg', 'gif', 'webp')):
+                embed.set_thumbnail(url=file.url)
+            else:
+                embed.add_field(name='Attachment',
+                                value=f'[{file.filename}]({file.url})',
+                                inline=False)
+        embed.set_author(name=message.author.display_name,
+                         icon_url=message.author.avatar_url_as(format='png'))
+        embed.add_field(name=f"Originally sent {message.created_at}",
+                        value=f"[Jump to original...]({message.jump_url})",
+                        inline=False)
+        newstar = await channel.send(embed=embed)
+        db.add_starred(message.guild.id, message.id, newstar.id)
+    elif starred and count < threshold:
+        oldstar = await channel.fetch_message(starred['starred_id'])  
+        await oldstar.delete()
+        db.delete_starred(message.id)
+
+
 # Voice Role hook function
 @bot.event
 async def on_voice_state_update(member, before, after):
@@ -674,37 +715,10 @@ async def on_message(message):
     await bot.process_commands(message)
 
 
-# Starboard handler
-async def starboard(message):
-    channelID = db.get_cfg(message.guild.id, 'star_channel')
-    if not channelID:
-        return
-    channel = message.guild.get_channel(channelID)
-    threshold = db.get_cfg(message.guild.id, 'star_threshold')
-    reacts = message.reactions
-    emote = next((item for item in reacts if item.emoji == u'\U0001F31F'), 0)
-    if emote:
-        count = emote.count
-    else:
-        count = 0
-    starred = db.get_starred(message.id)
-    if not starred and count >= threshold:
-        embed = discord.Embed(description=message.content)
-        embed.set_author(name=message.author.name,
-                         icon_url=message.author.avatar_url)
-        embed.add_field(name=f"Originally sent {message.created_at}",
-                        value=f"[Jump to original...]({message.jump_url})",
-                        inline=False)
-        if message.attachments:
-            attachments = message.attachments
-            imageurl = attachments[0].url
-            embed.set_thumbnail(url=imageurl)
-        newstar = await channel.send(embed=embed)
-        db.add_starred(message.guild.id, message.id, newstar.id)
-    elif starred and count < threshold:
-        oldstar = await channel.fetch_message(starred['starred_id'])  
-        await oldstar.delete()
-        db.delete_starred(message.id)
+# Do stuff when a message is deleted
+@bot.event
+async def on_message_delete(message):
+    logdel = db.get_cfg(message.guild.id, 'log_deleted')
 
 
 # Handler for direct messages
