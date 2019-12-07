@@ -207,7 +207,9 @@ async def edit_say(ctx, message: discord.Message, *, content: str=None):
         embedlist = message.embeds
         content = embedlist[0].description
         if content:
-            embed = discord.Embed(description=content)        
+            embed = discord.Embed(description=content)
+        else:
+            embed = discord.Embed()
     if ctx.message.attachments:
         attachments = ctx.message.attachments
         imageurl = attachments[0].url
