@@ -221,6 +221,7 @@ async def edit_say(ctx, message: discord.Message, *, content: str=None):
         if imageurl:
             embed.set_image(url=imageurl)
     await message.edit(embed=embed)
+    await ctx.message.delete()
 
 
 # Assign specific roles to specific users
