@@ -191,6 +191,7 @@ async def say(ctx, *, content: str=None):
         embed.set_image(url=imageurl)
     # message.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
     await ctx.channel.send(embed=embed)
+    await ctx.message.delete()
 
 
 # Edit an embedded message from the bot
