@@ -4,94 +4,55 @@ from pathlib import Path
 
 
 # Set platform-independent path to db file
-DATABASE = str(Path(__file__).parent / "bot.db")
+DBPATH = Path(__file__).parent / "bot.db"
 
+# Set platform-independent path to migrations folder
+MIGPATH = Path(__file__).parent / "migration"
 
-# Create a database connection
-conn = sqlite3.connect(DATABASE)
-# Set the database to return dictionaries instead of tuples
+# Create DB connection
+conn = sqlite3.connect(str(DBPATH))
+
+# Set the DB to return row objects for name-based access to values
 conn.row_factory = sqlite3.Row
 
 
-# Initialize database and create default tables
-def setup_database():
+# Initialize DB and create default tables
+def setup_db():
     c = conn.cursor()
 
-    # Set database to use Write Ahead Log for concurrency
-    c.execute("PRAGMA journal_mode=WAL")
+    # Get the current DB version
+    dbver = c.execute("PRAGMA user_version").fetchone()[0]
 
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS guilds (
-        id INTEGER PRIMARY KEY UNIQUE,
-        bot_alias TEXT,
-        auto_role INTEGER,
-        greet_channel INTEGER,
-        greet_message TEXT,
-        bye_channel INTEGER,
-        bye_message TEXT,
-        perm_role INTEGER
-    );""")
+    if dbver == 0:
+        # Set DB to use Write Ahead Log for concurrency
+        c.execute("PRAGMA journal_mode=WAL;")
 
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS members (
-        id INTEGER PRIMARY KEY,
-        guild_id INTEGER,
-        member_id INTEGER,
-        created_at INTEGER,
-        joined_at INTEGER UNIQUE,
-        level INTEGER,
-        xp INTEGER,
-        cash INTEGER,
-        name TEXT,
-        nickname TEXT,
-        birthday INTEGER,
-        gender TEXT,
-        location TEXT,
-        description TEXT,
-        likes TEXT,
-        dislikes TEXT,
-        FOREIGN KEY (guild_id) REFERENCES guilds (id)
-    );""")
+    # Get list of migrations available
+    migrations = []
+    for child in sorted(MIGPATH.iterdir()):
+        if child.suffix == ".sql":
+            migrations.append(child)
 
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS reaction_roles (
-        uuid TEXT PRIMARY KEY UNIQUE,
-        guild_id INTEGER,
-        hook_id TEXT,
-        emoji TEXT,
-        role_id INTEGER,
-        FOREIGN KEY (guild_id) REFERENCES guilds (id)
-    );""")
-
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS voice_roles (
-        uuid TEXT PRIMARY KEY UNIQUE,
-        guild_id INTEGER,
-        hook_id INTEGER,
-        role_id INTEGER,
-        FOREIGN KEY (guild_id) REFERENCES guilds (id)
-    );""")
-
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS blurbs (
-        uuid TEXT PRIMARY KEY UNIQUE,
-        guild_id INTEGER,
-        command TEXT UNIQUE,
-        message TEXT,
-        FOREIGN KEY (guild_id) REFERENCES guilds (id)
-    );""")
-
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS temp (
-        id INTEGER PRIMARY KEY,
-        guild_id INTEGER,
-        member_id INTEGER UNIQUE,
-        menu TEXT,
-        selected TEXT,
-        FOREIGN KEY (guild_id) REFERENCES guilds (id)
-    );""")
-
-    conn.commit()
+    # Check if db matches latest version available, then update if not
+    latest = sorted(migrations, reverse = True)
+    latestver = int(latest[0].stem)
+    if dbver < latestver:
+        print("Database is out of date! Migrating...\n")
+        for item in migrations:
+            print(f"Checking DB migration file {item.stem}")
+            scriptver = int(item.stem)
+            if scriptver > dbver:
+                print(f"Migrating DB to version {scriptver}")
+                sqlfile = open(item, 'r').read()
+                try:
+                    c.executescript(sqlfile)
+                except Exception as e:
+                    print(e)
+                else:
+                    c.execute(f"PRAGMA user_version={scriptver};")
+                    print(f"Done! DB at version {scriptver}\n")
+            else:
+                print(f"Migration {item.stem} already applied, skipping...\n")
 
 
 # Adds a guild to the guilds table
@@ -118,12 +79,85 @@ def get_cfg(guildID, option):
 
 # Sets a config option for a guild in the guilds table
 def set_cfg(guildID, option, value):
-    c = conn.cursor()
-    c.execute(f"""
-    UPDATE guilds
-    SET {option} = ?
-    WHERE id = ?;""", (value,guildID,))
-    conn.commit()
+    if option == "bot_alias":
+        c = conn.cursor()
+        c.execute("""
+        UPDATE guilds
+        SET bot_alias = ?
+        WHERE id = ?;""", (value,guildID,))
+        conn.commit()
+
+    if option == "guild_stats":
+        c = conn.cursor()
+        c.execute("""
+        UPDATE guilds
+        SET guild_stats = ?
+        WHERE id = ?;""", (value,guildID,))
+        conn.commit()
+
+    if option == "star_channel":
+        c = conn.cursor()
+        c.execute("""
+        UPDATE guilds
+        SET star_channel = ?
+        WHERE id = ?;""", (value,guildID,))
+        conn.commit()
+
+    if option == "star_threshold":
+        c = conn.cursor()
+        c.execute("""
+        UPDATE guilds
+        SET star_threshold = ?
+        WHERE id = ?;""", (value,guildID,))
+        conn.commit()
+
+    if option == "auto_role":
+        c = conn.cursor()
+        c.execute("""
+        UPDATE guilds
+        SET auto_role = ?
+        WHERE id = ?;""", (value,guildID,))
+        conn.commit()
+
+    if option == "join_channel":
+        c = conn.cursor()
+        c.execute("""
+        UPDATE guilds
+        SET join_channel = ?
+        WHERE id = ?;""", (value,guildID,))
+        conn.commit()
+
+    if option == "join_message":
+        c = conn.cursor()
+        c.execute("""
+        UPDATE guilds
+        SET join_message = ?
+        WHERE id = ?;""", (value,guildID,))
+        conn.commit()
+
+    if option == "leave_channel":
+        c = conn.cursor()
+        c.execute("""
+        UPDATE guilds
+        SET leave_channel = ?
+        WHERE id = ?;""", (value,guildID,))
+        conn.commit()
+
+    if option == "leave_message":
+        c = conn.cursor()
+        c.execute("""
+        UPDATE guilds
+        SET leave_message = ?
+        WHERE id = ?;""", (value,guildID,))
+        conn.commit()
+
+    if option == "perm_role":
+        c = conn.cursor()
+        c.execute("""
+        UPDATE guilds
+        SET bperm_role = ?
+        WHERE id = ?;""", (value,guildID,))
+        conn.commit()
 
 
 # Resets a guild's config values to default
@@ -132,11 +166,13 @@ def clear_cfg(guildID):
     c.execute("""
     UPDATE guilds
     SET bot_alias = NULL,
+        star_channel = NULL,
         auto_role = NULL,
-        greet_channel = NULL,
-        greet_message = NULL,
-        bye_channel = NULL,
-        bye_message = NULL
+        join_channel = NULL,
+        join_message = NULL,
+        leave_channel = NULL,
+        leave_message = NULL,
+        perm_role = NULL
     WHERE id = ?;""", (guildID,))
     conn.commit()
 
@@ -150,7 +186,7 @@ def add_member(guildID, memberID, created, joined):
         member_id,
         created_at,
         joined_at,
-        level,
+        lvl,
         xp,
         cash
     )
@@ -170,7 +206,7 @@ def get_all_members(guildID):
 
 
 # Returns a specific member of a given guild
-def get_member_profile(guildID, memberID):
+def get_mem_prof(guildID, memberID):
     c = conn.cursor()
     c.execute("""
     SELECT *
@@ -181,19 +217,25 @@ def get_member_profile(guildID, memberID):
 
 
 # Updates a specific member of a given guild
-def set_member_stats(guildID, memberID, lvl, xp):         
-    c = conn.cursor()
-    c.execute("""
-    UPDATE members
-    SET level = ?,
-        xp = ?
-    WHERE guild_id = ?
-    AND member_id = ?;""", (lvl,xp,guildID,memberID,))
-    conn.commit()
+def set_mem_prof(guildID, memberID, option, value):
+    if option == "lvl":    
+        c = conn.cursor()
+        c.execute("""
+        UPDATE members
+        SET lvl = ?
+        WHERE guild_id = ?
+        AND member_id = ?;""", (value,guildID,memberID,))
+        conn.commit()
 
+    if option == "xp":
+        c = conn.cursor()
+        c.execute("""
+        UPDATE members
+        SET xp = ?
+        WHERE guild_id = ?
+        AND member_id = ?;""", (value,guildID,memberID,))
+        conn.commit()
 
-# Updates a specific member of a given guild
-def set_member_profile(guildID, memberID, option, value):
     if option == "name":
         c = conn.cursor()
         c.execute("""
@@ -375,6 +417,39 @@ def delete_voice_role(vrID):
         return True
     else:
         return False
+
+
+# Creates a starred message for a given guild
+def add_starred(guildID, originalID, starredID):
+    c = conn.cursor()
+    c.execute("""
+    INSERT INTO starboard (
+        guild_id,
+        original_id,
+        starred_id
+    )
+    VALUES
+        (?,?,?);""", (guildID,originalID,starredID,))
+    conn.commit()
+
+
+# Returns a starred message of a given guild
+def get_starred(messageID):
+    c = conn.cursor()
+    c.execute("""
+    SELECT *
+    FROM starboard
+    WHERE original_id = ?;""", (messageID,))
+    return c.fetchone()
+
+
+# Deletes a starred message of a given guild
+def delete_starred(messageID):
+    c = conn.cursor()
+    c.execute("""
+    DELETE FROM starboard
+    WHERE original_id = ?;""", (messageID,))
+    conn.commit()
 
 
 # Set temp data in case the bot goes down mid-process

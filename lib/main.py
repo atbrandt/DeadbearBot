@@ -1,6 +1,6 @@
 import os, math
 from datetime import datetime, date
-from typing import Union
+from typing import Union, Optional
 from pathlib import Path
 from dotenv import load_dotenv
 import discord
@@ -39,7 +39,7 @@ bot = commands.Bot(command_prefix=get_alias)
 
 
 # Converter shorthands. These are coroutines, must be awaited.
-# Usage is *.convert(ctx, arg)
+# Usage is convSomething.convert(ctx, arg)
 convMember = commands.MemberConverter()
 convMessage = commands.MessageConverter()
 convUser = commands.UserConverter()
@@ -57,13 +57,14 @@ convColour = commands.ColourConverter()
 # Checking perms before executing command
 def check_perms():
     def predicate(ctx):
-        permrole = db.get_cfg(ctx.guild.id, "perm_role")
+        permrole = db.get_cfg(ctx.guild.id, 'perm_role')
         gotRole = ctx.guild.get_role(permrole)
         roles = ctx.author.roles
         return gotRole in roles
     return commands.check(predicate)
 
 
+# Class definition for embedded menus
 class Menu:
     def __init__(self, title, desc, fields):
         self.title = title
@@ -85,56 +86,61 @@ class Menu:
                 return item
 
 
+# Setup profile management menu
 ptitle = "Profile Management Menu"
 pdesc = "Reply with the number of the profile option you want to change:"
-pfields = [{"fname": "1. Name",
-           "fdesc": "Your \"name\", real or otherwise.",
-           "prompt": "Submit a name, or send `clear` to reset.",
-           "chars": 40,
-           "format": "text",
-           "dbval": "name"},
-           {"fname": "2. Nickname",
-           "fdesc": "What you like to be called.",
-           "prompt": "Submit a nickname, or send `clear` to reset.",
-           "chars": 60,
-           "format": "text",
-           "dbval": "nickname"},
-           {"fname": "3. Age",
-           "fdesc": "Your age, if you want it known.",
-           "prompt": "Submit a date in the format `YYYY-MM-DD`, or send `clear` to reset.\nNote that this date will *not* show up on your profile, it's just used to calculate age.",
-           "chars": 10,
-           "format": "date",
-           "dbval": "birthday"},
-           {"fname": "4. Gender",
-           "fdesc": "Whatever you identify as.",
-           "prompt": "Submit whatever you want, or send `clear` to reset.",
-           "chars": 60,
-           "format": "text",
-           "dbval": "gender"},
-           {"fname": "5. Location",
-           "fdesc": "Your location, specific or general.",
-           "prompt": "Submit a location, or send `clear` to reset.",
-           "chars": 80,
-           "format": "text",
-           "dbval": "location"},
-           {"fname": "6. Description",
-           "fdesc": "A big text box for whatever.",
-           "prompt": "Submit whatever you want, or send `clear` to reset.",
-           "chars": 1024,
-           "format": "text",
-           "dbval": "description"},
-           {"fname": "7. Likes",
-           "fdesc": "A list of all the things you like.",
-           "prompt": "Submit items separated by commas, or send `clear` to reset.",
-           "chars": 1024,
-           "format": "list",
-           "dbval": "likes"},
-           {"fname": "8. Dislikes",
-           "fdesc": "A list of all the things you hate.",
-           "prompt": "Submit items separated by commas, or send `clear` to reset.",
-           "chars": 1024,
-           "format": "list",
-           "dbval": "dislikes"}]
+pfields = [{'fname': "1. Name",
+            'fdesc': "Your \"name\", real or otherwise.",
+            'prompt': "Submit a name, or send `clear` to reset.",
+            'chars': 40,
+            'format': 'text',
+            'dbval': 'name'},
+           {'fname': "2. Nickname",
+            'fdesc': "What you like to be called.",
+            'prompt': "Submit a nickname, or send `clear` to reset.",
+            'chars': 60,
+            'format': 'text',
+            'dbval': 'nickname'},
+           {'fname': "3. Age",
+            'fdesc': "Your age, if you want it known.",
+            'prompt': "Submit a date in the format `YYYY-MM-DD`, or send "
+            "`clear` to reset.\nNote that this date will *not* show up on "
+            "your profile, it's just used to calculate age.",
+            'chars': 10,
+            'format': 'date',
+            'dbval': 'birthday'},
+           {'fname': "4. Gender",
+            'fdesc': "Whatever you identify as.",
+            'prompt': "Submit whatever you want, or send `clear` to reset.",
+            'chars': 60,
+            'format': 'text',
+            'dbval': 'gender'},
+           {'fname': "5. Location",
+            'fdesc': "Your location, specific or general.",
+            'prompt': "Submit a location, or send `clear` to reset.",
+            'chars': 80,
+            'format': 'text',
+            'dbval': 'location'},
+           {'fname': "6. Description",
+            'fdesc': "A big text box for whatever.",
+            'prompt': "Submit whatever you want, or send `clear` to reset.",
+            'chars': 1024,
+            'format': 'text',
+            'dbval': 'description'},
+           {'fname': "7. Likes",
+            'fdesc': "A list of all the things you like.",
+            'prompt': "Submit items, separated by commas, or send `clear` to "
+            "reset.",
+            'chars': 1024,
+            'format': 'list',
+            'dbval': 'likes'},
+           {'fname': "8. Dislikes",
+            'fdesc': "A list of all the things you hate.",
+            'prompt': "Submit items separated by commas, or send `clear` to "
+            "reset.",
+            'chars': 1024,
+            'format': 'list',
+            'dbval': 'dislikes'}]
 ProfileMenu = Menu(ptitle, pdesc, pfields)
 
 
@@ -146,14 +152,14 @@ async def hello_world(ctx):
 
 
 # Set an alias for the bot prefix
-@bot.command(name='AliasPrefix',
+@bot.command(name='PrefixAlias',
              description="Sets an alias for the default command prefix.",
              brief="Set command prefix alias.",
              aliases=['prefix'])
 @commands.guild_only()
 @commands.is_owner()
 async def change_prefix(ctx, prefix):
-    db.set_cfg(ctx.guild.id, "bot_alias", prefix)
+    db.set_cfg(ctx.guild.id, 'bot_alias', prefix)
     await ctx.channel.send(f"My command prefix is now \"{prefix}\".")
 
 
@@ -165,17 +171,62 @@ async def change_prefix(ctx, prefix):
 @commands.guild_only()
 @commands.is_owner()
 async def set_perms(ctx, role: discord.Role):
-    db.set_cfg(ctx.guild.id, "perm_role", role.id)
+    db.set_cfg(ctx.guild.id, 'perm_role', role.id)
     await ctx.channel.send(f"Added \"{role.name}\" to perm roles.")
 
 
+# Make the bot say things in a nice embedded way
+@bot.group(name='BotSay',
+           description="Make the bot embed a message with given message.",
+           brief="Make the bot talk.",
+           aliases=['say'],
+           invoke_without_command=True)
+@commands.guild_only()
+@commands.is_owner()
+async def say(ctx, *, content: str=None):
+    embed = discord.Embed(description=content)
+    if ctx.message.attachments:
+        attachments = ctx.message.attachments
+        imageurl = attachments[0].url
+        embed.set_image(url=imageurl)
+    # message.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
+    await ctx.channel.send(embed=embed)
+
+
+# Edit an embedded message from the bot
+@say.command(name='EditBotSay',
+             description="Edit a previously created bot embedded message.",
+             brief="Change a bot message.",
+             aliases=['e','edit'])
+@commands.guild_only()
+@commands.is_owner()
+async def edit_say(ctx, message: discord.Message, *, content: str=None):
+    if content is not None:
+        embed = discord.Embed(description=content)
+    else:
+        embedlist = message.embeds
+        content = embedlist[0].description
+        if content:
+            embed = discord.Embed(description=content)        
+    if ctx.message.attachments:
+        attachments = ctx.message.attachments
+        imageurl = attachments[0].url
+        embed.set_image(url=imageurl)
+    else:
+        embedlist = message.embeds
+        imageurl = embedlist[0].image.url
+        if imageurl:
+            embed.set_image(url=imageurl)
+    await message.edit(embed=embed)
+
+
 # Assign specific roles to specific users
-@bot.group(name='ToggleRole',
-           description="Toggles a role for a member. Pass a role's `name` "
-                       "or `id` and the member's `name` or `id` to add or "
-                       "remove the role.",
-           brief="Assign or remove member role by name or ID",
-           aliases=['trole'])
+@bot.command(name='ToggleRole',
+             description="Toggles a role for a member. Pass a role's `name` "
+                         "or `id` and the member's `name` or `id` to add or "
+                         "remove the role.",
+             brief="Assign or remove member role by name or ID",
+             aliases=['trole'])
 @commands.guild_only()
 @commands.is_owner()
 async def toggle_role(ctx, role: discord.Role, member: discord.Member):
@@ -196,86 +247,95 @@ async def toggle_role(ctx, role: discord.Role, member: discord.Member):
                          "joining the guild. Pass a role's `name` or `id` to "
                          "enable or disable the auto-role.",
              brief="Modify auto-role settings.",
-             aliases=["arole"])
+             aliases=['arole'])
 @commands.guild_only()
 @commands.is_owner()
 async def auto_role(ctx, role: discord.Role):
-    autorole = db.get_cfg(ctx.guild.id, "auto_role")
+    autorole = db.get_cfg(ctx.guild.id, 'auto_role')
     if autorole is None:
-        db.set_cfg(ctx.guild.id, "auto_role", role.id)
+        db.set_cfg(ctx.guild.id, 'auto_role', role.id)
         await ctx.channel.send(f"Added \"{role.name}\" to auto-role.")
     else:
-        db.set_cfg(ctx.guild.id, "auto_role", None)
+        db.set_cfg(ctx.guild.id, 'auto_role', None)
         await ctx.channel.send(f"Removed \"{role.name}\" from auto-role.")
 # ctx.channel.send("No role found! Check the name or ID entered.")
 
 
-# Set the greet message channel
-@bot.command(name='GuildGreet',
-             description="Configures the automatic greeting message when "
-                         "users join the server.",
-             brief="Modify greet message settings.",
-             aliases=["gg"])
+# Manage starboard settings
+@bot.command(name='Starboard',
+             description="Sets the configuration for starred messages.",
+             brief="Modify starboard settings.",
+             aliases=['star'])
 @commands.guild_only()
 @commands.is_owner()
-async def guild_greet_channel(ctx):
-    greetchnl = db.get_cfg(ctx.guild.id, "greet_channel")
-    if greetchnl is None:
-        db.set_cfg(ctx.guild.id, "greet_channel", ctx.channel.id)
-        await ctx.channel.send(f"Greeting enabled in \"{ctx.channel}\".")
-    elif greetchnl == ctx.channel.id:
-        db.set_cfg(ctx.guild.id, "greet_channel", None)
+async def starboard(ctx, channel: discord.TextChannel=None):
+    starboard = db.get_cfg(ctx.guild.id, 'star_channel')
+    if starboard is None:
+        db.set_cfg(ctx.guild.id, 'star_channel', channel.id)
+        await ctx.channel.send(f"Set \"{channel.name}\" as the star board.")
+    else:
+        db.set_cfg(ctx.guild.id, 'star_channel', None)
+        await ctx.channel.send(f"Starboard disabled.")
+
+
+# Set the channel for join messages
+@bot.group(name='GuildJoin',
+           description="Enables or disables the automatic join message in a "
+                       "specified channel. Pass no channel to disable.",
+           brief="Turn join messages on or off.",
+           aliases=['gj'],
+           invoke_without_command=True)
+@commands.guild_only()
+@commands.is_owner()
+async def gjoin(ctx, channel: discord.TextChannel=None):
+    if channel is not None:
+        db.set_cfg(ctx.guild.id, 'join_channel', channel.id)
+        await ctx.channel.send(f"Greeting enabled for \"{channel.name}\".")
+    else:
+        db.set_cfg(ctx.guild.id, 'join_channel', None)
         await ctx.channel.send("Greeting disabled.")
-    else:
-        gotChannel = bot.get_channel(greetchnl)
-        await ctx.channel.send("Disable the greeting by running this command "
-                               f"in \"{gotChannel.name}\".")
 
 
-# Set the greet message
-@bot.command(name='GuildGreetMessage',
-             description="Sets the automatic greeting message.",
-             brief="Modify greet message.",
-             aliases=["ggmsg"])
+# Set the join message
+@gjoin.command(name='JoinMessage',
+               description="Sets the automatic greeting message.",
+               brief="Modify join message.",
+               aliases=['msg'])
 @commands.guild_only()
 @commands.is_owner()
-async def guild_greet_message(ctx, *, message: str):
-    db.set_cfg(ctx.guild.id, "greet_message", message)
-    await ctx.channel.send(f"The greet message is now: \"{message}\"")
+async def gjoin_message(ctx, *, message: str):
+    db.set_cfg(ctx.guild.id, 'join_message', message)
+    await ctx.channel.send(f"The join message is now: \"{message}\"")
 
 
-# Set the leave message channel
-@bot.command(name='GuildLeave',
-             description="Configures the automatic farewell message when "
-                         "users join the server.",
-             brief="Modify greet message settings.",
-             aliases=["gl"])
+# Set the channel for leave messages
+@bot.group(name='GuildLeave',
+           description="Enables or disables the automatic leave message in a "
+                       "specified channel. Pass no channel to disable.",
+           brief="Turn leave message on or off.",
+           aliases=['gl'],
+           invoke_without_command=True)
 @commands.guild_only()
 @commands.is_owner()
-async def guild_farewell_channel(ctx):
-    byechnl = db.get_cfg(ctx.guild.id, "bye_channel")
-    if byechnl is None:
-        db.set_cfg(ctx.guild.id, "bye_channel", ctx.channel.id)
-        await ctx.channel.send(f"Farewell enabled in \"{ctx.channel}\".")
-    elif byechnl == ctx.channel.id:
-        db.set_cfg(ctx.guild.id, "bye_channel", None)
-        await ctx.channel.send("Farewell disabled.")
+async def gleave(ctx, channel: discord.TextChannel=None):
+    if channel is not None:
+        db.set_cfg(ctx.guild.id, 'leave_channel', channel.id)
+        await ctx.channel.send(f"Farewells enabled for \"{channel.name}\".")
     else:
-        gotChannel = bot.get_channel(byechnl)
-        await ctx.channel.send(f"Disable the greeting by running this "
-                               f"command in \"{gotChannel.name}\".")
+        db.set_cfg(ctx.guild.id, 'leave_channel', None)
+        await ctx.channel.send("Farewells disabled.")
 
 
 # Set the leave message
-@bot.command(name='GuildLeaveMessage',
-             description="Sets the automatic farewell message.",
-             brief="Modify greet message.",
-             aliases=["glmsg"])
+@gleave.command(name='LeaveMessage',
+               description="Sets the automatic leave message.",
+               brief="Modify leave message.",
+               aliases=['msg'])
 @commands.guild_only()
 @commands.is_owner()
-async def guild_farewell_message(ctx, *, message: str):
-    db.set_cfg(ctx.guild.id, "bye_message", message)
-    await ctx.channel.send(f"The leave message is now: \"{message}\"")
+async def gleave_message(ctx, *, message: str):
+    db.set_cfg(ctx.guild.id, 'leave_message', message)
+    await ctx.channel.send(f"The farewell message is now: \"{message}\"")
 
 
 # Command to set a reaction role
@@ -289,15 +349,14 @@ async def guild_farewell_message(ctx, *, message: str):
 @commands.guild_only()
 @commands.is_owner()
 async def add_rr(ctx, message: discord.Message,
-                emoji: Union[discord.Emoji, str],
-                role: discord.Role):
+                 emoji: Union[discord.Emoji, str],
+                 role: discord.Role):
     guildID = ctx.guild.id
     hookID = str(message.channel.id) + "-" + str(message.id)
     if type(emoji) is str:
         exists, rrID = db.add_reaction_role(guildID, hookID, emoji, role.id)
     else:
         exists, rrID = db.add_reaction_role(guildID, hookID, emoji.id, role.id)
-
     if not exists:
         await message.add_reaction(emoji)
         await ctx.channel.send(f"Set \"{emoji}\" to give the \"{role.name}\" " 
@@ -385,47 +444,63 @@ async def list_vr(ctx):
 @bot.group(name='Profile',
            description="Display your profile information.",
            brief="Get your profile.",
-           aliases=['prof'],
+           aliases=['prof','profile'],
            invoke_without_command=True)
 @commands.guild_only()
 @check_perms()
 async def profile(ctx, member: discord.Member=None):
-#    if ctx.invoked_subcommand is None:
     if member is not None:
-        dbprof = db.get_member_profile(ctx.guild.id, member.id)
+        dbprof = db.get_mem_prof(ctx.guild.id, member.id)
     else:
-        dbprof = db.get_member_profile(ctx.guild.id, ctx.author.id)
+        dbprof = db.get_mem_prof(ctx.guild.id, ctx.author.id)
         member = ctx.author
     if dbprof['birthday'] is not None:
-        born = datetime.strptime(dbprof['birthday'], "%Y-%m-%d")
+        born = datetime.strptime(dbprof['birthday'], '%Y-%m-%d')
         now = date.today()
         age = now.year-born.year-((now.month, now.day)<(born.month, born.day))
     else:
         age = None
-    fields = {"Total XP": f"{dbprof['xp']} XP",
-              "Cash On Hand": f"${dbprof['cash']}",
-              "Name": f"{dbprof['name']}",
-              "Nickname": f"{dbprof['nickname']}",
-              "Age": f"{age}",
-              "Gender": f"{dbprof['gender']}",
-              "Location": f"{dbprof['location']}",
-              "Description": f"{dbprof['description']}",
-              "Likes": f"{dbprof['likes']}",
-              "Dislikes": f"{dbprof['dislikes']}"}
+    fields = [{'title': "Total XP",
+               'data': f"{dbprof['xp']} XP",
+               'inline': True},
+              {'title': "Cash On Hand",
+               'data': f"${dbprof['cash']}",
+               'inline': True},
+              {'title': "Name",
+               'data': dbprof['name'],
+               'inline': True},
+              {'title': "Nickname",
+               'data': dbprof['nickname'],
+               'inline': True},
+              {'title': "Age",
+               'data': age,
+               'inline': True},
+              {'title': "Gender",
+               'data': dbprof['gender'],
+               'inline': True},
+              {'title': "Location",
+               'data': dbprof['location'],
+               'inline': True},
+              {'title': "Description",
+               'data': dbprof['description'],
+               'inline': False},
+              {'title': "Likes",
+               'data': dbprof['likes'],
+               'inline': True},
+              {'title': "Dislikes",
+               'data': dbprof['dislikes'],
+               'inline': True}]
     empty = fields.copy()
-    for k, v in empty.items():
-        if v == "None":
-            fields.pop(k)
-    embtitle = f"Level: **{dbprof['level']}**"
+    for i in empty:
+        if i['data'] == None:
+            fields.remove(i)
+    embtitle = f"Level: **{dbprof['lvl']}**"
     embdesc = f"Member of *{ctx.guild.name}*"
     profile = discord.Embed(title=embtitle, description=embdesc)
     profile.set_author(name=member.name)
     profile.set_thumbnail(url=member.avatar_url)
-    for k, v in fields.items():
-        if v == None:
-            profile.add_field(name=k)
-        else:
-            profile.add_field(name=k, value=v)
+    for i in fields:
+        profile.add_field(name=i['title'], value=i['data'], inline=i['inline'])
     await ctx.channel.send(embed=profile)
 
 
@@ -433,7 +508,7 @@ async def profile(ctx, member: discord.Member=None):
 @profile.command(name='Edit',
                  description="Edit your member profile information.",
                  brief="Edit profile information.",
-                 aliases=['e'])
+                 aliases=['e','edit'])
 @commands.guild_only()
 @check_perms()
 async def profile_edit(ctx):
@@ -492,18 +567,22 @@ async def on_raw_reaction_add(payload):
     if payload.user_id == bot.user.id:
         return
     guildID = payload.guild_id
+    guild = bot.get_guild(guildID)
+    channel = guild.get_channel(payload.channel_id)
+    message = await channel.fetch_message(payload.message_id)
+    if payload.emoji.name == u'\U0001F31F':
+        await starboard(message)
     roles = db.get_reaction_roles(guildID)
     if roles is not None:
-        guild = bot.get_guild(guildID)
-        hookID = str(payload.channel_id) + "-" + str(payload.message_id)
+        hookID = f"{payload.channel_id}-{payload.message_id}"
         if payload.emoji.is_custom_emoji():
             emoji = str(payload.emoji.id)
         else:
             emoji = payload.emoji.name
         for i in roles:
-            if hookID == i["hook_id"] and emoji == i["emoji"]:
+            if hookID == i['hook_id'] and emoji == i['emoji']:
                 member = guild.get_member(payload.user_id)
-                role = guild.get_role(i["role_id"])
+                role = guild.get_role(i['role_id'])
                 if role not in member.roles:
                     await member.add_roles(role, reason="ReactionRole")
 
@@ -514,10 +593,14 @@ async def on_raw_reaction_remove(payload):
     if payload.user_id == bot.user.id:
         return
     guildID = payload.guild_id
+    guild = bot.get_guild(guildID)
+    channel = guild.get_channel(payload.channel_id)
+    message = await channel.fetch_message(payload.message_id)
+    if payload.emoji.name == u'\U0001F31F':
+        await starboard(message)
     roles = db.get_reaction_roles(guildID)
     if roles is not None:
-        guild = bot.get_guild(guildID)
-        hookID = str(payload.channel_id) + "-" + str(payload.message_id)
+        hookID = f"{payload.channel_id}-{payload.message_id}"
         if payload.emoji.is_custom_emoji():
             emoji = str(payload.emoji.id)
         else:
@@ -554,14 +637,14 @@ async def on_voice_state_update(member, before, after):
 async def on_member_join(member):
     guildID = member.guild.id
     db.add_member(guildID, member.id, member.created_at, member.joined_at)
-    autorole = db.get_cfg(guildID, "auto_role")
+    autorole = db.get_cfg(guildID, 'auto_role')
     if autorole is not None:
         getRole = member.guild.get_role(autorole)
         await member.add_roles(getRole, reason="AutoRole")
-    greetchnl = db.get_cfg(guildID, "greet_channel")
-    if greetchnl is not None:
-        message = db.get_cfg(guildID, "greet_message")
-        gotChannel = bot.get_channel(greetchnl)
+    joinchnl = db.get_cfg(guildID, 'join_channel')
+    if joinchnl is not None:
+        message = db.get_cfg(guildID, 'join_message')
+        gotChannel = bot.get_channel(joinchnl)
         await gotChannel.send(message.format(member=member))
 
 
@@ -569,22 +652,55 @@ async def on_member_join(member):
 @bot.event
 async def on_member_remove(member):
     guildID = member.guild.id
-    byechnl = db.get_cfg(guildID, "bye_channel")
-    if byechnl is not None:
-        message = db.get_cfg(guildID, "bye_message")
-        gotChannel = bot.get_channel(byechnl)
+    leavechnl = db.get_cfg(guildID, 'leave_channel')
+    if leavechnl is not None:
+        message = db.get_cfg(guildID, 'leave_message')
+        gotChannel = bot.get_channel(leavechnl)
         await gotChannel.send(message.format(member=member))
 
 
 # Do stuff when a message is sent
 @bot.event
 async def on_message(message):
-    if message.author != bot.user:
+    if not message.author.bot:
         if str(message.channel.type) == 'private':
             await private_message_handler(message)
         else:
             await guild_message_handler(message)
     await bot.process_commands(message)
+
+
+# Starboard handler
+async def starboard(message):
+    channelID = db.get_cfg(message.guild.id, 'star_channel')
+    if not channelID:
+        return
+    channel = message.guild.get_channel(channelID)
+    threshold = db.get_cfg(message.guild.id, 'star_threshold')
+    reacts = message.reactions
+    emote = next((item for item in reacts if item.emoji == u'\U0001F31F'), 0)
+    if emote:
+        count = emote.count
+    else:
+        count = 0
+    starred = db.get_starred(message.id)
+    if not starred and count >= threshold:
+        embed = discord.Embed(description=message.content)
+        embed.set_author(name=message.author.name,
+                         icon_url=message.author.avatar_url)
+        embed.add_field(name=f"Originally sent {message.created_at}",
+                        value=f"[Jump to original...]({message.jump_url})",
+                        inline=False)
+        if message.attachments:
+            attachments = message.attachments
+            imageurl = attachments[0].url
+            embed.set_thumbnail(url=imageurl)
+        newstar = await channel.send(embed=embed)
+        db.add_starred(message.guild.id, message.id, newstar.id)
+    elif starred and count < threshold:
+        oldstar = await channel.fetch_message(starred['starred_id'])  
+        await oldstar.delete()
+        db.delete_starred(message.id)
 
 
 # Handler for direct messages
@@ -609,16 +725,16 @@ async def private_message_handler(message):
             guild = temp['guild_id']
             member = temp['member_id']
             if message.content.lower() == "clear":
-                db.set_member_profile(guild, member, option['dbval'], None)
+                db.set_mem_prof(guild, member, option['dbval'], None)
                 db.update_temp(message.author.id, None)
                 await message.channel.send("Option cleared! Enter another "
                                            "number to continue or send `exit` " 
                                            "to quit.")
                 return
             if len(message.content) <= option['chars']:
-                if option['format'] == "list":
+                if option['format'] == 'list':
                     setting = message.content.replace(", ", "\n")
-                elif option['format'] == "date":
+                elif option['format'] == 'date':
                     try:
                         datetime.strptime(message.content, '%Y-%m-%d')
                         setting = message.content
@@ -627,7 +743,7 @@ async def private_message_handler(message):
                         return
                 else:
                     setting = message.content
-                db.set_member_profile(guild, member, option['dbval'], setting)
+                db.set_mem_prof(guild, member, option['dbval'], setting)
                 db.update_temp(message.author.id, None)
                 await message.channel.send("Set! Enter another number to "
                                            "continue or send `exit` to quit.")
@@ -637,19 +753,20 @@ async def private_message_handler(message):
 
 # Handler for guild messages
 async def guild_message_handler(message):
-    member = message.author
     guild = message.guild
-    profile = db.get_member_profile(guild.id, member.id)
-    curxp = profile['xp'] + 1
-    nlevel = profile['level'] + 1
-    levelup = math.floor(curxp / ((2 * nlevel) ** 2))
-    if levelup == 1:
-        channel = message.channel
-        await channel.send(f"**{member.name}** has leveled up to **level "
-                           f"{nlevel}!**")
-        db.set_member_stats(guild.id, member.id, lvl=nlevel, xp=curxp)
-    else:
-        db.set_member_stats(guild.id, member.id, lvl=profile['level'], xp=curxp)
+    stats = db.get_cfg(guild.id, 'guild_stats')
+    if stats == 'enabled':
+        member = message.author
+        profile = db.get_mem_prof(guild.id, member.id)
+        curxp = profile['xp'] + 1
+        db.set_mem_prof(guild.id, member.id, option='xp', value=curxp)
+        nlevel = profile['lvl'] + 1
+        levelup = math.floor(curxp / ((2 * nlevel) ** 2))
+        if levelup == 1:
+            channel = message.channel
+            await channel.send(f"**{member.name}** has leveled up to **level "
+                               f"{nlevel}!**")
+            db.set_mem_prof(guild.id, member.id, option='lvl', value=nlevel)
 
 
 # Global error handler as temp solution
@@ -682,14 +799,15 @@ async def on_ready():
         db.add_guild(gID)
         members = guild.members
         for member in members:
-            mID = member.id
-            created = member.created_at
-            joined = member.joined_at
-            db.add_member(gID, mID, created, joined)
+            if not member.bot:
+                mID = member.id
+                created = member.created_at
+                joined = member.joined_at
+                db.add_member(gID, mID, created, joined)
     print(f"{bot.user.name} is ready, user ID is {bot.user.id}")
     print("------")
 
 
 # Run the program
-db.setup_database()
+db.setup_db()
 bot.run(token)

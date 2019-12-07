@@ -23,8 +23,6 @@
 # Logs and databases #
 ######################
 *.log
-*.sql
-*.sqlite
 *.db*
 
 # OS generated files #
@@ -40,5 +38,4 @@ __pycache__
 
 # Files needed for operation #
 ######################
-*.yml
 *.env
