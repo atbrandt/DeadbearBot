@@ -155,7 +155,7 @@ def set_cfg(guildID, option, value):
         c = conn.cursor()
         c.execute("""
         UPDATE guilds
-        SET bperm_role = ?
+        SET perm_role = ?
         WHERE id = ?;""", (value,guildID,))
         conn.commit()
 
@@ -206,7 +206,7 @@ def get_all_members(guildID):
 
 
 # Returns a specific member of a given guild
-def get_mem_prof(guildID, memberID):
+def get_member(guildID, memberID):
     c = conn.cursor()
     c.execute("""
     SELECT *
@@ -217,7 +217,7 @@ def get_mem_prof(guildID, memberID):
 
 
 # Updates a specific member of a given guild
-def set_mem_prof(guildID, memberID, option, value):
+def set_member(guildID, memberID, option, value):
     if option == "lvl":    
         c = conn.cursor()
         c.execute("""
@@ -348,17 +348,17 @@ def add_reaction_role(guildID, hookID, emoji, roleID):
 
 
 # Removes a reaction role from database by its unique ID, if it exists
-def delete_reaction_role(rrID):
+def del_reaction_role(UUID):
     c = conn.cursor()
     c.execute("""
     SELECT uuid
     FROM reaction_roles
-    WHERE uuid = ?;""", (rrID,))
+    WHERE uuid = ?;""", (UUID,))
     check = c.fetchone()
     if check:
         c.execute("""
         DELETE FROM reaction_roles
-        WHERE uuid = ?;""", (rrID,))
+        WHERE uuid = ?;""", (UUID,))
         conn.commit()
         return True
     else:
@@ -402,17 +402,17 @@ def add_voice_role(guildID, hookID, roleID):
 
 
 # Removes a voice role from database by its unique ID, if it exists
-def delete_voice_role(vrID):
+def del_voice_role(UUID):
     c = conn.cursor()
     c.execute("""
     SELECT uuid
     FROM voice_roles
-    WHERE uuid = ?;""", (rrID,))
+    WHERE uuid = ?;""", (UUID,))
     check = c.fetchone()
     if check:
         c.execute("""
         DELETE FROM voice_roles
-        WHERE uuid = ?;""", (rrID,))
+        WHERE uuid = ?;""", (UUID,))
         conn.commit()
         return True
     else:
@@ -444,7 +444,7 @@ def get_starred(messageID):
 
 
 # Deletes a starred message of a given guild
-def delete_starred(messageID):
+def del_starred(messageID):
     c = conn.cursor()
     c.execute("""
     DELETE FROM starboard
@@ -452,27 +452,75 @@ def delete_starred(messageID):
     conn.commit()
 
 
+# Creates a role alert for a given guild
+def add_role_alert(guildID, roleID, event, channelID, message):
+    c = conn.cursor()
+    uniqueID = str(uuid4())
+    c.execute("""
+    INSERT INTO role_alerts (
+        uuid,
+        guild_id,
+        role_id,
+        event,
+        channel_id,
+        message
+    )
+    VALUES
+        (?, ?, ?, ?, ?, ?);""", (uniqueID,guildID,roleID,event,channelID,message,))
+    conn.commit()
+    return uniqueID
+
+
+# Returns a role alert for a given guild
+def get_role_alert(roleID, event):
+    c = conn.cursor()
+    c.execute("""
+    SELECT *
+    FROM role_alerts
+    WHERE role_id = ?
+    AND event = ?;""", (roleID,event,))
+    return c.fetchone()
+
+
+# Deletes a role alert for a given guild
+def del_role_alert(UUID):
+    c = conn.cursor()
+    c.execute("""
+    SELECT uuid
+    FROM role_alerts
+    WHERE uuid = ?;""", (UUID,))
+    check = c.fetchone()
+    if check:
+        c.execute("""
+        DELETE FROM role_alerts
+        WHERE uuid = ?;""", (UUID,))
+        conn.commit()
+        return True
+    else:
+        return False
+
+
 # Set temp data in case the bot goes down mid-process
-def set_temp(guildID, memberID, menu):
+def add_temp(guildID, memberID):
     c = conn.cursor()
     c.execute("""
     INSERT OR REPLACE INTO temp (
         guild_id,
-        member_id,
-        menu
+        member_id
     )
     VALUES
-        (?, ?, ?);""", (guildID,memberID,menu,))
+        (?, ?);""", (guildID,memberID,))
     conn.commit()
 
 
 # Update the menu layer a user is currently on
-def update_temp(memberID, selected):
+def set_temp(memberID, selected):
     c = conn.cursor()
     c.execute("""
     UPDATE temp
     SET selected = ?
     WHERE member_id = ?;""", (selected,memberID,))
+    conn.commit()
 
 
 # Get temp data
