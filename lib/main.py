@@ -781,7 +781,7 @@ async def star_remove(message, starboard):
     if starred:
         oldstar = await starboard.fetch_message(starred['starred_id'])
         await oldstar.delete()
-        db.delete_starred(message.id)
+        db.del_starred(message.id)
 
 
 # Do stuff to members upon joining guild
