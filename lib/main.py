@@ -1,4 +1,5 @@
-import os, math
+import os
+import math
 from datetime import datetime, date
 from typing import Union, Optional
 from pathlib import Path
@@ -21,7 +22,7 @@ else:
     print("No bot token found!")
     token = input("Enter your bot's token: ")
     with Path.open(ENVFILE, 'w', encoding='utf-8') as file:
-        file.write(f"export DEADBEAR_TOKEN=\'{token}\';")    
+        file.write(f"export DEADBEAR_TOKEN=\'{token}\';")
 
 
 # Create callable to obtain guild-specific alias for command prefix
@@ -29,7 +30,7 @@ async def get_alias(bot, message):
     if message.guild:
         guild = message.guild.id
         prefix = db.get_cfg(guild, 'bot_alias')
-        if prefix != None:
+        if prefix:
             return prefix
     return "-"
 
@@ -73,7 +74,7 @@ class Menu:
         fmax = 9
         self.pages = math.ceil(len(self.fields)/fmax)
         self.pfields = [self.fields[i*fmax:(i+1)*fmax] for i in range(self.pages)]
-    
+
     def embedded(self):
         embeds = []
         for index, page in enumerate(self.pagefields, 1):
@@ -110,9 +111,9 @@ pfields = [{'fname': "1. Name",
             'dbval': 'nickname'},
            {'fname': "3. Age",
             'fdesc': "Your age, if you want it known.",
-            'prompt': "Submit a date, using the format `YYYY-MM-DD`\nNote that "
-                      "this date will *not* show up on your profile, it's only "
-                      "used to calculate age.",
+            'prompt': "Submit a date, using the format `YYYY-MM-DD`\nNote "
+                      "that this date will *not* show up on your profile, "
+                      "it's only used to calculate age.",
             'chars': 10,
             'format': 'date',
             'dbval': 'birthday'},
@@ -216,7 +217,7 @@ async def say(ctx, *, content: str=None):
 @say.command(name='EditBotSay',
              description="Edit a previously created bot embedded message.",
              brief="Change a bot message.",
-             aliases=['e','edit'])
+             aliases=['e', 'edit'])
 @commands.guild_only()
 @commands.is_owner()
 async def edit_say(ctx, message: discord.Message, *, content: str=None):
@@ -304,7 +305,7 @@ async def starboard(ctx, channel: discord.TextChannel=None):
 @bot.group(name='Profile',
            description="Display your profile information.",
            brief="Get your profile.",
-           aliases=['prof','profile'],
+           aliases=['prof', 'profile'],
            invoke_without_command=True)
 @commands.guild_only()
 @check_perms()
@@ -368,7 +369,7 @@ async def profile(ctx, member: discord.Member=None):
 @profile.command(name='Edit',
                  description="Edit your member profile information.",
                  brief="Edit profile information.",
-                 aliases=['e','edit'])
+                 aliases=['e', 'edit'])
 @commands.guild_only()
 @check_perms()
 async def profile_edit(ctx):
@@ -396,7 +397,7 @@ async def profile_edit(ctx):
 @commands.guild_only()
 @commands.is_owner()
 async def gjoin(ctx, channel: discord.TextChannel=None):
-    if channel is not None:
+    if channel:
         db.set_cfg(ctx.guild.id, 'join_channel', channel.id)
         await ctx.channel.send(f"Greeting enabled for \"{channel.name}\".")
     else:
@@ -426,7 +427,7 @@ async def gjoin_message(ctx, *, message: str):
 @commands.guild_only()
 @commands.is_owner()
 async def gleave(ctx, channel: discord.TextChannel=None):
-    if channel is not None:
+    if channel:
         db.set_cfg(ctx.guild.id, 'leave_channel', channel.id)
         await ctx.channel.send(f"Farewells enabled for \"{channel.name}\".")
     else:
@@ -436,9 +437,9 @@ async def gleave(ctx, channel: discord.TextChannel=None):
 
 # Set the leave message
 @gleave.command(name='LeaveMessage',
-               description="Sets the automatic leave message.",
-               brief="Modify leave message.",
-               aliases=['msg'])
+                description="Sets the automatic leave message.",
+                brief="Modify leave message.",
+                aliases=['msg'])
 @commands.guild_only()
 @commands.is_owner()
 async def gleave_message(ctx, *, message: str):
@@ -468,7 +469,7 @@ async def add_rr(ctx,
         exists, rrID = db.add_reaction_role(guildID, hookID, emoji.id, role.id)
     if not exists:
         await message.add_reaction(emoji)
-        await ctx.channel.send(f"Set \"{emoji}\" to give the \"{role.name}\" " 
+        await ctx.channel.send(f"Set \"{emoji}\" to give the \"{role.name}\" "
                                f"role.\nID = {rrID}")
     else:
         await ctx.channel.send(f"That already exists! ID = {rrID}")
@@ -703,13 +704,14 @@ async def greact_event(guild, member, channel, message, emoji, event):
         return
     starboard = db.get_cfg(guild.id, 'star_channel')
     if starboard:
+        starchannel = guild.get_channel(starboard)
         threshold = db.get_cfg(guild.id, 'star_threshold')
         reacts = message.reactions
         reaction = next((i for i in reacts if i.emoji == emoji), 0)
         if reaction.count >= threshold:
-            await star_add(message)
+            await star_add(message, starchannel)
         else:
-            await star_remove(message)
+            await star_remove(message, starchannel)
 
 
 # Handler for dm reaction events
@@ -746,7 +748,7 @@ async def preact_event(user, channel, message, emoji, event):
 
 
 # Add star to starboard
-async def star_add(message):
+async def star_add(message, starboard):
     starred = db.get_starred(message.id)
     if not starred:
         embed = discord.Embed(description=message.content)
@@ -769,15 +771,15 @@ async def star_add(message):
                         value=f"[Jump to original...]({message.jump_url})",
                         inline=False)
         embed.set_footer(text=f"Originally sent {message.created_at}")
-        newstar = await message.channel.send(embed=embed)
+        newstar = await starboard.send(embed=embed)
         db.add_starred(message.guild.id, message.id, newstar.id)
 
 
 # Remove star from starboard
-async def star_remove(message):
+async def star_remove(message, starboard):
     starred = db.get_starred(message.id)
     if starred:
-        oldstar = await message.channel.fetch_message(starred['starred_id'])  
+        oldstar = await starboard.fetch_message(starred['starred_id'])
         await oldstar.delete()
         db.delete_starred(message.id)
 

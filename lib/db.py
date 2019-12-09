@@ -34,7 +34,7 @@ def setup_db():
             migrations.append(child)
 
     # Check if db matches latest version available, then update if not
-    latest = sorted(migrations, reverse = True)
+    latest = sorted(migrations, reverse=True)
     latestver = int(latest[0].stem)
     if dbver < latestver:
         print("Database is out of date! Migrating...\n")
@@ -75,7 +75,7 @@ def get_cfg(guildID, option):
     FROM guilds
     WHERE id = ?;""", (guildID,))
     return c.fetchone()[option]
-    
+
 
 # Sets a config option for a guild in the guilds table
 def set_cfg(guildID, option, value):
@@ -84,7 +84,7 @@ def set_cfg(guildID, option, value):
         c.execute("""
         UPDATE guilds
         SET bot_alias = ?
-        WHERE id = ?;""", (value,guildID,))
+        WHERE id = ?;""", (value, guildID,))
         conn.commit()
 
     if option == "guild_stats":
@@ -92,7 +92,7 @@ def set_cfg(guildID, option, value):
         c.execute("""
         UPDATE guilds
         SET guild_stats = ?
-        WHERE id = ?;""", (value,guildID,))
+        WHERE id = ?;""", (value, guildID,))
         conn.commit()
 
     if option == "star_channel":
@@ -100,7 +100,7 @@ def set_cfg(guildID, option, value):
         c.execute("""
         UPDATE guilds
         SET star_channel = ?
-        WHERE id = ?;""", (value,guildID,))
+        WHERE id = ?;""", (value, guildID,))
         conn.commit()
 
     if option == "star_threshold":
@@ -108,7 +108,7 @@ def set_cfg(guildID, option, value):
         c.execute("""
         UPDATE guilds
         SET star_threshold = ?
-        WHERE id = ?;""", (value,guildID,))
+        WHERE id = ?;""", (value, guildID,))
         conn.commit()
 
     if option == "auto_role":
@@ -116,7 +116,7 @@ def set_cfg(guildID, option, value):
         c.execute("""
         UPDATE guilds
         SET auto_role = ?
-        WHERE id = ?;""", (value,guildID,))
+        WHERE id = ?;""", (value, guildID,))
         conn.commit()
 
     if option == "join_channel":
@@ -124,7 +124,7 @@ def set_cfg(guildID, option, value):
         c.execute("""
         UPDATE guilds
         SET join_channel = ?
-        WHERE id = ?;""", (value,guildID,))
+        WHERE id = ?;""", (value, guildID,))
         conn.commit()
 
     if option == "join_message":
@@ -132,7 +132,7 @@ def set_cfg(guildID, option, value):
         c.execute("""
         UPDATE guilds
         SET join_message = ?
-        WHERE id = ?;""", (value,guildID,))
+        WHERE id = ?;""", (value, guildID,))
         conn.commit()
 
     if option == "leave_channel":
@@ -140,7 +140,7 @@ def set_cfg(guildID, option, value):
         c.execute("""
         UPDATE guilds
         SET leave_channel = ?
-        WHERE id = ?;""", (value,guildID,))
+        WHERE id = ?;""", (value, guildID,))
         conn.commit()
 
     if option == "leave_message":
@@ -148,7 +148,7 @@ def set_cfg(guildID, option, value):
         c.execute("""
         UPDATE guilds
         SET leave_message = ?
-        WHERE id = ?;""", (value,guildID,))
+        WHERE id = ?;""", (value, guildID,))
         conn.commit()
 
     if option == "perm_role":
@@ -156,7 +156,7 @@ def set_cfg(guildID, option, value):
         c.execute("""
         UPDATE guilds
         SET perm_role = ?
-        WHERE id = ?;""", (value,guildID,))
+        WHERE id = ?;""", (value, guildID,))
         conn.commit()
 
 
@@ -191,7 +191,7 @@ def add_member(guildID, memberID, created, joined):
         cash
     )
     VALUES
-        (?, ?, ?, ?, ?, ?, ?);""", (guildID,memberID,created,joined,0,0,0,))
+        (?, ?, ?, ?, ?, ?, ?);""", (guildID, memberID, created, joined, 0, 0, 0,))
     conn.commit()
 
 
@@ -212,19 +212,19 @@ def get_member(guildID, memberID):
     SELECT *
     FROM members
     WHERE guild_id = ?
-    AND member_id = ?;""", (guildID,memberID,))
+    AND member_id = ?;""", (guildID, memberID,))
     return c.fetchone()
 
 
 # Updates a specific member of a given guild
 def set_member(guildID, memberID, option, value):
-    if option == "lvl":    
+    if option == "lvl":
         c = conn.cursor()
         c.execute("""
         UPDATE members
         SET lvl = ?
         WHERE guild_id = ?
-        AND member_id = ?;""", (value,guildID,memberID,))
+        AND member_id = ?;""", (value, guildID, memberID,))
         conn.commit()
 
     if option == "xp":
@@ -233,7 +233,7 @@ def set_member(guildID, memberID, option, value):
         UPDATE members
         SET xp = ?
         WHERE guild_id = ?
-        AND member_id = ?;""", (value,guildID,memberID,))
+        AND member_id = ?;""", (value, guildID, memberID,))
         conn.commit()
 
     if option == "name":
@@ -242,7 +242,7 @@ def set_member(guildID, memberID, option, value):
         UPDATE members
         SET name = ?
         WHERE guild_id = ?
-        AND member_id = ?;""", (value,guildID,memberID,))
+        AND member_id = ?;""", (value, guildID, memberID,))
         conn.commit()
 
     if option == "nickname":
@@ -251,7 +251,7 @@ def set_member(guildID, memberID, option, value):
         UPDATE members
         SET nickname = ?
         WHERE guild_id = ?
-        AND member_id = ?;""", (value,guildID,memberID,))
+        AND member_id = ?;""", (value, guildID, memberID,))
         conn.commit()
 
     if option == "birthday":
@@ -260,7 +260,7 @@ def set_member(guildID, memberID, option, value):
         UPDATE members
         SET birthday = ?
         WHERE guild_id = ?
-        AND member_id = ?;""", (value,guildID,memberID,))
+        AND member_id = ?;""", (value, guildID, memberID,))
         conn.commit()
 
     if option == "gender":
@@ -269,7 +269,7 @@ def set_member(guildID, memberID, option, value):
         UPDATE members
         SET gender = ?
         WHERE guild_id = ?
-        AND member_id = ?;""", (value,guildID,memberID,))
+        AND member_id = ?;""", (value, guildID, memberID,))
         conn.commit()
 
     if option == "location":
@@ -278,7 +278,7 @@ def set_member(guildID, memberID, option, value):
         UPDATE members
         SET location = ?
         WHERE guild_id = ?
-        AND member_id = ?;""", (value,guildID,memberID,))
+        AND member_id = ?;""", (value, guildID, memberID,))
         conn.commit()
 
     if option == "description":
@@ -287,7 +287,7 @@ def set_member(guildID, memberID, option, value):
         UPDATE members
         SET description = ?
         WHERE guild_id = ?
-        AND member_id = ?;""", (value,guildID,memberID,))
+        AND member_id = ?;""", (value, guildID, memberID,))
         conn.commit()
 
     if option == "likes":
@@ -296,7 +296,7 @@ def set_member(guildID, memberID, option, value):
         UPDATE members
         SET likes = ?
         WHERE guild_id = ?
-        AND member_id = ?;""", (value,guildID,memberID,))
+        AND member_id = ?;""", (value, guildID, memberID,))
         conn.commit()
 
     if option == "dislikes":
@@ -305,7 +305,7 @@ def set_member(guildID, memberID, option, value):
         UPDATE members
         SET dislikes = ?
         WHERE guild_id = ?
-        AND member_id = ?;""", (value,guildID,memberID,))
+        AND member_id = ?;""", (value, guildID, memberID,))
         conn.commit()
 
 
@@ -327,7 +327,7 @@ def add_reaction_role(guildID, hookID, emoji, roleID):
     FROM reaction_roles
     WHERE hook_id = ?
     AND emoji = ?
-    AND role_id = ?;""", (hookID,emoji,roleID,))
+    AND role_id = ?;""", (hookID, emoji, roleID,))
     check = c.fetchone()
     if not check:
         uniqueID = str(uuid4())
@@ -340,7 +340,7 @@ def add_reaction_role(guildID, hookID, emoji, roleID):
             role_id
         )
         VALUES
-            (?, ?, ?, ?, ?);""", (uniqueID,guildID,hookID,emoji,roleID,))
+            (?, ?, ?, ?, ?);""", (uniqueID, guildID, hookID, emoji, roleID,))
         conn.commit()
         return (False, uniqueID)
     else:
@@ -382,7 +382,7 @@ def add_voice_role(guildID, hookID, roleID):
     SELECT uuid, hook_id, role_id
     FROM voice_roles
     WHERE hook_id = ?
-    AND role_id = ?;""", (hookID,roleID,))
+    AND role_id = ?;""", (hookID, roleID,))
     check = c.fetchone()
     if not check:
         uniqueID = str(uuid4())
@@ -394,7 +394,7 @@ def add_voice_role(guildID, hookID, roleID):
             role_id
         )
         VALUES
-            (?, ?, ?, ?);""", (uniqueID,guildID,hookID,roleID,))
+            (?, ?, ?, ?);""", (uniqueID, guildID, hookID, roleID,))
         conn.commit()
         return (False, uniqueID)
     else:
@@ -429,7 +429,7 @@ def add_starred(guildID, originalID, starredID):
         starred_id
     )
     VALUES
-        (?,?,?);""", (guildID,originalID,starredID,))
+        (?,?,?);""", (guildID, originalID, starredID,))
     conn.commit()
 
 
@@ -466,7 +466,7 @@ def add_role_alert(guildID, roleID, event, channelID, message):
         message
     )
     VALUES
-        (?, ?, ?, ?, ?, ?);""", (uniqueID,guildID,roleID,event,channelID,message,))
+        (?, ?, ?, ?, ?, ?);""", (uniqueID, guildID, roleID, event, channelID, message,))
     conn.commit()
     return uniqueID
 
@@ -478,7 +478,7 @@ def get_role_alert(roleID, event):
     SELECT *
     FROM role_alerts
     WHERE role_id = ?
-    AND event = ?;""", (roleID,event,))
+    AND event = ?;""", (roleID, event,))
     return c.fetchone()
 
 
@@ -509,7 +509,7 @@ def add_temp(guildID, memberID):
         member_id
     )
     VALUES
-        (?, ?);""", (guildID,memberID,))
+        (?, ?);""", (guildID, memberID,))
     conn.commit()
 
 
@@ -519,7 +519,7 @@ def set_temp(memberID, selected):
     c.execute("""
     UPDATE temp
     SET selected = ?
-    WHERE member_id = ?;""", (selected,memberID,))
+    WHERE member_id = ?;""", (selected, memberID,))
     conn.commit()
 
 
@@ -540,4 +540,3 @@ def del_temp(memberID):
     DELETE FROM temp
     WHERE member_id = ?;""", (memberID,))
     conn.commit()
-
