@@ -1,169 +1,65 @@
-import sqlite3
+import aiosqlite
 from uuid import uuid4
 from pathlib import Path
 
 
-# Set platform-independent path to db file
 DBPATH = Path(__file__).parent / "bot.db"
 
-# Set platform-independent path to migrations folder
-MIGPATH = Path(__file__).parent / "migration"
 
-# Create DB connection
-conn = sqlite3.connect(str(DBPATH))
-
-# Set the DB to return row objects for name-based access to values
-conn.row_factory = sqlite3.Row
-
-
-# Initialize DB and create default tables
-def setup_db():
-    c = conn.cursor()
-
-    # Get the current DB version
-    dbver = c.execute("PRAGMA user_version").fetchone()[0]
-
-    if dbver == 0:
-        # Set DB to use Write Ahead Log for concurrency
-        c.execute("PRAGMA journal_mode=WAL;")
-
-    # Get list of migrations available
-    migrations = []
-    for child in sorted(MIGPATH.iterdir()):
-        if child.suffix == ".sql":
-            migrations.append(child)
-
-    # Check if db matches latest version available, then update if not
-    latest = sorted(migrations, reverse=True)
-    latestver = int(latest[0].stem)
-    if dbver < latestver:
-        print("Database is out of date! Migrating...\n")
-        for item in migrations:
-            print(f"Checking DB migration file {item.stem}")
-            scriptver = int(item.stem)
-            if scriptver > dbver:
-                print(f"Migrating DB to version {scriptver}")
-                sqlfile = open(item, 'r').read()
-                try:
-                    c.executescript(sqlfile)
-                except Exception as e:
-                    print(e)
-                else:
-                    c.execute(f"PRAGMA user_version={scriptver};")
-                    print(f"Done! DB at version {scriptver}\n")
-            else:
-                print(f"Migration {item.stem} already applied, skipping...\n")
+# Function for creating a connection to db
+async def db_connect():
+    conn = await aiosqlite.connect(str(DBPATH))
+    conn.row_factory = aiosqlite.Row
+    return conn
 
 
 # Adds a guild to the guilds table
-def add_guild(guildID):
-    c = conn.cursor()
-    c.execute("""
+async def add_guild(guildID):
+    conn = await db_connect()
+    c = await conn.cursor()
+    sql = """
     INSERT OR IGNORE INTO guilds (
         id
     )
     VALUES
-        (?);""", (guildID,))
-    conn.commit()
+        (?);"""
+    await c.execute(sql, (guildID,))
+    await conn.commit()
+    await conn.close()
 
 
 # Returns a guild's config option from the guilds table
-def get_cfg(guildID, option):
-    c = conn.cursor()
-    c.execute("""
+async def get_cfg(guildID, option):
+    conn = await db_connect()
+    c = await conn.cursor()
+    sql = """
     SELECT *
     FROM guilds
-    WHERE id = ?;""", (guildID,))
-    return c.fetchone()[option]
+    WHERE id = ?;"""
+    await c.execute(sql, (guildID,))
+    fetched = await c.fetchone()
+    await conn.close()
+    return fetched[option]
 
 
 # Sets a config option for a guild in the guilds table
-def set_cfg(guildID, option, value):
-    if option == "bot_alias":
-        c = conn.cursor()
-        c.execute("""
-        UPDATE guilds
-        SET bot_alias = ?
-        WHERE id = ?;""", (value, guildID,))
-        conn.commit()
-
-    if option == "guild_stats":
-        c = conn.cursor()
-        c.execute("""
-        UPDATE guilds
-        SET guild_stats = ?
-        WHERE id = ?;""", (value, guildID,))
-        conn.commit()
-
-    if option == "star_channel":
-        c = conn.cursor()
-        c.execute("""
-        UPDATE guilds
-        SET star_channel = ?
-        WHERE id = ?;""", (value, guildID,))
-        conn.commit()
-
-    if option == "star_threshold":
-        c = conn.cursor()
-        c.execute("""
-        UPDATE guilds
-        SET star_threshold = ?
-        WHERE id = ?;""", (value, guildID,))
-        conn.commit()
-
-    if option == "auto_role":
-        c = conn.cursor()
-        c.execute("""
-        UPDATE guilds
-        SET auto_role = ?
-        WHERE id = ?;""", (value, guildID,))
-        conn.commit()
-
-    if option == "join_channel":
-        c = conn.cursor()
-        c.execute("""
-        UPDATE guilds
-        SET join_channel = ?
-        WHERE id = ?;""", (value, guildID,))
-        conn.commit()
-
-    if option == "join_message":
-        c = conn.cursor()
-        c.execute("""
-        UPDATE guilds
-        SET join_message = ?
-        WHERE id = ?;""", (value, guildID,))
-        conn.commit()
-
-    if option == "leave_channel":
-        c = conn.cursor()
-        c.execute("""
-        UPDATE guilds
-        SET leave_channel = ?
-        WHERE id = ?;""", (value, guildID,))
-        conn.commit()
-
-    if option == "leave_message":
-        c = conn.cursor()
-        c.execute("""
-        UPDATE guilds
-        SET leave_message = ?
-        WHERE id = ?;""", (value, guildID,))
-        conn.commit()
-
-    if option == "perm_role":
-        c = conn.cursor()
-        c.execute("""
-        UPDATE guilds
-        SET perm_role = ?
-        WHERE id = ?;""", (value, guildID,))
-        conn.commit()
+async def set_cfg(guildID, option, value):
+    conn = await db_connect()
+    c = await conn.cursor()
+    sql = f"""
+    UPDATE guilds
+    SET {option} = ?
+    WHERE id = ?;"""
+    await c.execute(sql, (value, guildID,))
+    await conn.commit()
+    await conn.close()
 
 
 # Resets a guild's config values to default
-def clear_cfg(guildID):
-    c = conn.cursor()
-    c.execute("""
+async def clear_cfg(guildID):
+    conn = await db_connect()
+    c = await conn.cursor()
+    sql = """
     UPDATE guilds
     SET bot_alias = NULL,
         star_channel = NULL,
@@ -173,14 +69,17 @@ def clear_cfg(guildID):
         leave_channel = NULL,
         leave_message = NULL,
         perm_role = NULL
-    WHERE id = ?;""", (guildID,))
-    conn.commit()
+    WHERE id = ?;"""
+    await c.execute(sql, (guildID,))
+    await conn.commit()
+    await conn.close()
 
 
 # Adds a member to the members table
-def add_member(guildID, memberID, created, joined):
-    c = conn.cursor()
-    c.execute("""
+async def add_member(guildID, memberID, created, joined):
+    conn = await db_connect()
+    c = await conn.cursor()
+    sql = """
     INSERT OR IGNORE INTO members (
         guild_id,
         member_id,
@@ -191,147 +90,84 @@ def add_member(guildID, memberID, created, joined):
         cash
     )
     VALUES
-        (?, ?, ?, ?, ?, ?, ?);""", (guildID, memberID, created, joined, 0, 0, 0,))
-    conn.commit()
+        (?, ?, ?, ?, ?, ?, ?);"""
+    await c.execute(sql, (guildID, memberID, created, joined, 0, 0, 0,))
+    await conn.commit()
+    await conn.close()
 
 
 # Returns all members of a given guild
-def get_all_members(guildID):
-    c = conn.cursor()
-    c.execute("""
+async def get_all_members(guildID):
+    conn = await db_connect()
+    c = await conn.cursor()
+    sql = """
     SELECT member_id
     FROM members
-    WHERE guild_id = ?;""", (guildID,))
-    return c.fetchall()
+    WHERE guild_id = ?;"""
+    await c.execute(sql, (guildID,))
+    fetched = await c.fetchall()
+    await conn.close()
+    return fetched
 
 
 # Returns a specific member of a given guild
-def get_member(guildID, memberID):
-    c = conn.cursor()
-    c.execute("""
+async def get_member(guildID, memberID):
+    conn = await db_connect()
+    c = await conn.cursor()
+    sql = """
     SELECT *
     FROM members
     WHERE guild_id = ?
-    AND member_id = ?;""", (guildID, memberID,))
-    return c.fetchone()
+    AND member_id = ?;"""
+    await c.execute(sql, (guildID, memberID,))
+    fetched = await c.fetchone()
+    await conn.close()
+    return fetched
 
 
 # Updates a specific member of a given guild
-def set_member(guildID, memberID, option, value):
-    if option == "lvl":
-        c = conn.cursor()
-        c.execute("""
-        UPDATE members
-        SET lvl = ?
-        WHERE guild_id = ?
-        AND member_id = ?;""", (value, guildID, memberID,))
-        conn.commit()
-
-    if option == "xp":
-        c = conn.cursor()
-        c.execute("""
-        UPDATE members
-        SET xp = ?
-        WHERE guild_id = ?
-        AND member_id = ?;""", (value, guildID, memberID,))
-        conn.commit()
-
-    if option == "name":
-        c = conn.cursor()
-        c.execute("""
-        UPDATE members
-        SET name = ?
-        WHERE guild_id = ?
-        AND member_id = ?;""", (value, guildID, memberID,))
-        conn.commit()
-
-    if option == "nickname":
-        c = conn.cursor()
-        c.execute("""
-        UPDATE members
-        SET nickname = ?
-        WHERE guild_id = ?
-        AND member_id = ?;""", (value, guildID, memberID,))
-        conn.commit()
-
-    if option == "birthday":
-        c = conn.cursor()
-        c.execute("""
-        UPDATE members
-        SET birthday = ?
-        WHERE guild_id = ?
-        AND member_id = ?;""", (value, guildID, memberID,))
-        conn.commit()
-
-    if option == "gender":
-        c = conn.cursor()
-        c.execute("""
-        UPDATE members
-        SET gender = ?
-        WHERE guild_id = ?
-        AND member_id = ?;""", (value, guildID, memberID,))
-        conn.commit()
-
-    if option == "location":
-        c = conn.cursor()
-        c.execute("""
-        UPDATE members
-        SET location = ?
-        WHERE guild_id = ?
-        AND member_id = ?;""", (value, guildID, memberID,))
-        conn.commit()
-
-    if option == "description":
-        c = conn.cursor()
-        c.execute("""
-        UPDATE members
-        SET description = ?
-        WHERE guild_id = ?
-        AND member_id = ?;""", (value, guildID, memberID,))
-        conn.commit()
-
-    if option == "likes":
-        c = conn.cursor()
-        c.execute("""
-        UPDATE members
-        SET likes = ?
-        WHERE guild_id = ?
-        AND member_id = ?;""", (value, guildID, memberID,))
-        conn.commit()
-
-    if option == "dislikes":
-        c = conn.cursor()
-        c.execute("""
-        UPDATE members
-        SET dislikes = ?
-        WHERE guild_id = ?
-        AND member_id = ?;""", (value, guildID, memberID,))
-        conn.commit()
+async def set_member(guildID, memberID, option, value):
+    conn = await db_connect()
+    c = await conn.cursor()
+    sql = f"""
+    UPDATE members
+    SET {option} = ?
+    WHERE guild_id = ?
+    AND member_id = ?;"""
+    await c.execute(sql, (value, guildID, memberID,))
+    await conn.commit()
+    await conn.close()
 
 
 # Returns all reaction roles of a given guild
-def get_reaction_roles(guildID):
-    c = conn.cursor()
-    c.execute("""
+async def get_reaction_roles(guildID):
+    conn = await db_connect()
+    c = await conn.cursor()
+    sql = """
     SELECT uuid, hook_id, emoji, role_id
     FROM reaction_roles
-    WHERE guild_id = ?;""", (guildID,))
-    return c.fetchall()
+    WHERE guild_id = ?;"""
+    await c.execute(sql, (guildID,))
+    fetched = await c.fetchall()
+    await conn.close()
+    return fetched
 
 
 # Adds a reaction role to database, excepting on exact duplicates
-def add_reaction_role(guildID, hookID, emoji, roleID):
-    c = conn.cursor()
-    c.execute("""
+async def add_reaction_role(guildID, hookID, emoji, roleID):
+    conn = await db_connect()
+    c = await conn.cursor()
+    sql = """
     SELECT uuid, hook_id, emoji, role_id
     FROM reaction_roles
     WHERE hook_id = ?
     AND emoji = ?
-    AND role_id = ?;""", (hookID, emoji, roleID,))
-    check = c.fetchone()
-    if not check:
-        uniqueID = str(uuid4())
-        c.execute("""
+    AND role_id = ?;"""
+    await c.execute(sql, (hookID, emoji, roleID,))
+    exists = await c.fetchone()
+    if not exists:
+        UUID = str(uuid4())
+        sql = """
         INSERT INTO reaction_roles (
             uuid,
             guild_id,
@@ -340,53 +176,67 @@ def add_reaction_role(guildID, hookID, emoji, roleID):
             role_id
         )
         VALUES
-            (?, ?, ?, ?, ?);""", (uniqueID, guildID, hookID, emoji, roleID,))
-        conn.commit()
-        return (False, uniqueID)
+            (?, ?, ?, ?, ?);"""
+        await c.execute(sql, (UUID, guildID, hookID, emoji, roleID,))
+        await conn.commit()
+        await conn.close()
+        return (False, UUID)
     else:
-        return (True, check['uuid'])
+        await conn.close()
+        return (True, exists['uuid'])
 
 
 # Removes a reaction role from database by its unique ID, if it exists
-def del_reaction_role(UUID):
-    c = conn.cursor()
-    c.execute("""
+async def del_reaction_role(UUID):
+    conn = await db_connect()
+    c = await conn.cursor()
+    sql = """
     SELECT uuid
     FROM reaction_roles
-    WHERE uuid = ?;""", (UUID,))
-    check = c.fetchone()
-    if check:
-        c.execute("""
+    WHERE uuid = ?;"""
+    await c.execute(sql, (UUID,))
+    exists = await c.fetchone()
+    if exists:
+        sql = """
         DELETE FROM reaction_roles
-        WHERE uuid = ?;""", (UUID,))
-        conn.commit()
+        WHERE uuid = ?;"""
+        await c.execute(sql, (UUID,))
+        await conn.commit()
+        await conn.close()
         return True
     else:
+        await conn.close()
         return False
 
 
 # Returns all voice roles for a given guild
-def get_voice_roles(guildID):
-    c = conn.cursor()
-    c.execute("""
+async def get_voice_roles(guildID):
+    conn = await db_connect()
+    c = await conn.cursor()
+    sql = """
     SELECT uuid, hook_id, role_id
     FROM voice_roles
-    WHERE guild_id = ?;""", (guildID,))
-    return c.fetchall()
+    WHERE guild_id = ?;"""
+    await c.execute(sql, (guildID,))
+    fetched = await c.fetchall()
+    await conn.close()
+    return fetched
 
 
 # Adds a voice role to database, excepting on exact duplicates
-def add_voice_role(guildID, hookID, roleID):
-    c = conn.cursor()
-    c.execute("""
+async def add_voice_role(guildID, hookID, roleID):
+    conn = await db_connect()
+    c = await conn.cursor()
+    sql = """
     SELECT uuid, hook_id, role_id
     FROM voice_roles
     WHERE hook_id = ?
-    AND role_id = ?;""", (hookID, roleID,))
-    check = c.fetchone()
-    if not check:
-        uniqueID = str(uuid4())
-        c.execute("""
+    AND role_id = ?;"""
+    await c.execute(sql, (hookID, roleID,))
+    exists = await c.fetchone()
+    if not exists:
+        UUID = str(uuid4())
+        sql = """
         INSERT INTO voice_roles (
             uuid,
             guild_id,
@@ -394,69 +244,87 @@ def add_voice_role(guildID, hookID, roleID):
             role_id
         )
         VALUES
-            (?, ?, ?, ?);""", (uniqueID, guildID, hookID, roleID,))
-        conn.commit()
-        return (False, uniqueID)
+            (?, ?, ?, ?);"""
+        await c.execute(sql, (UUID, guildID, hookID, roleID,))
+        await conn.commit()
+        await conn.close()
+        return (False, UUID)
     else:
-        return (True, check['uuid'])
+        await conn.close()
+        return (True, exists['uuid'])
 
 
 # Removes a voice role from database by its unique ID, if it exists
-def del_voice_role(UUID):
-    c = conn.cursor()
-    c.execute("""
+async def del_voice_role(UUID):
+    conn = await db_connect()
+    c = await conn.cursor()
+    sql = """
     SELECT uuid
     FROM voice_roles
-    WHERE uuid = ?;""", (UUID,))
-    check = c.fetchone()
+    WHERE uuid = ?;"""
+    await c.execute(sql, (UUID,))
+    check = await c.fetchone()
     if check:
-        c.execute("""
+        sql = """
         DELETE FROM voice_roles
-        WHERE uuid = ?;""", (UUID,))
-        conn.commit()
+        WHERE uuid = ?;"""
+        await c.execute(sql, (UUID,))
+        await conn.commit()
+        await conn.close()
         return True
     else:
+        await conn.close()
         return False
 
 
 # Creates a starred message for a given guild
-def add_starred(guildID, originalID, starredID):
-    c = conn.cursor()
-    c.execute("""
+async def add_starred(guildID, originalID, starredID):
+    conn = await db_connect()
+    c = await conn.cursor()
+    sql = """
     INSERT INTO starboard (
         guild_id,
         original_id,
         starred_id
     )
     VALUES
-        (?,?,?);""", (guildID, originalID, starredID,))
-    conn.commit()
+        (?,?,?);"""
+    await c.execute(sql, (guildID, originalID, starredID,))
+    await conn.commit()
+    await conn.close()
 
 
 # Returns a starred message of a given guild
-def get_starred(messageID):
-    c = conn.cursor()
-    c.execute("""
+async def get_starred(messageID):
+    conn = await db_connect()
+    c = await conn.cursor()
+    sql = """
     SELECT *
     FROM starboard
-    WHERE original_id = ?;""", (messageID,))
-    return c.fetchone()
+    WHERE original_id = ?;"""
+    await c.execute(sql, (messageID,))
+    fetched = await c.fetchone()
+    await conn.close()
+    return fetched
 
 
 # Deletes a starred message of a given guild
-def del_starred(messageID):
-    c = conn.cursor()
-    c.execute("""
+async def del_starred(messageID):
+    conn = await db_connect()
+    c = await conn.cursor()
+    sql = """
     DELETE FROM starboard
-    WHERE original_id = ?;""", (messageID,))
-    conn.commit()
+    WHERE original_id = ?;"""
+    await c.execute(sql, (messageID,))
+    await conn.commit()
+    await conn.close()
 
 
 # Creates a role alert for a given guild
-def add_role_alert(guildID, roleID, event, channelID, message):
-    c = conn.cursor()
-    uniqueID = str(uuid4())
-    c.execute("""
+async def add_role_alert(guildID, roleID, event, channelID, message):
+    conn = await db_connect()
+    c = await conn.cursor()
+    sql = """
     INSERT INTO role_alerts (
         uuid,
         guild_id,
@@ -466,77 +334,101 @@ def add_role_alert(guildID, roleID, event, channelID, message):
         message
     )
     VALUES
-        (?, ?, ?, ?, ?, ?);""", (uniqueID, guildID, roleID, event, channelID, message,))
-    conn.commit()
-    return uniqueID
+        (?, ?, ?, ?, ?, ?);"""
+    UUID = str(uuid4())
+    await c.execute(sql, (UUID, guildID, roleID, event, channelID, message,))
+    await conn.commit()
+    await conn.close()
+    return UUID
 
 
 # Returns a role alert for a given guild
-def get_role_alert(roleID, event):
-    c = conn.cursor()
-    c.execute("""
+async def get_role_alert(roleID, event):
+    conn = await db_connect()
+    c = await conn.cursor()
+    sql = """
     SELECT *
     FROM role_alerts
     WHERE role_id = ?
-    AND event = ?;""", (roleID, event,))
-    return c.fetchone()
-
+    AND event = ?;"""
+    await c.execute(sql, (roleID, event,))
+    fetched = await c.fetchone()
+    await conn.close()
+    return fetched
 
 # Deletes a role alert for a given guild
-def del_role_alert(UUID):
-    c = conn.cursor()
-    c.execute("""
+async def del_role_alert(UUID):
+    conn = await db_connect()
+    c = await conn.cursor()
+    sql = """
     SELECT uuid
     FROM role_alerts
-    WHERE uuid = ?;""", (UUID,))
-    check = c.fetchone()
+    WHERE uuid = ?;"""
+    await c.execute(sql, (UUID,))
+    check = await c.fetchone()
     if check:
-        c.execute("""
+        sql = """
         DELETE FROM role_alerts
-        WHERE uuid = ?;""", (UUID,))
-        conn.commit()
+        WHERE uuid = ?;"""
+        await c.execute(sql, (UUID,))
+        await conn.commit()
+        await conn.close()
         return True
     else:
+        await conn.close()
         return False
 
 
 # Set temp data in case the bot goes down mid-process
-def add_temp(guildID, memberID):
-    c = conn.cursor()
-    c.execute("""
+async def add_temp(guildID, memberID):
+    conn = await db_connect()
+    c = await conn.cursor()
+    sql = """
     INSERT OR REPLACE INTO temp (
         guild_id,
         member_id
     )
     VALUES
-        (?, ?);""", (guildID, memberID,))
-    conn.commit()
+        (?, ?);"""
+    await c.execute(sql, (guildID, memberID,))
+    await conn.commit()
+    await conn.close()
 
 
 # Update the menu layer a user is currently on
-def set_temp(memberID, selected):
-    c = conn.cursor()
-    c.execute("""
+async def set_temp(memberID, selected):
+    conn = await db_connect()
+    c = await conn.cursor()
+    sql = """
     UPDATE temp
     SET selected = ?
-    WHERE member_id = ?;""", (selected, memberID,))
-    conn.commit()
+    WHERE member_id = ?;"""
+    await c.execute(sql, (selected, memberID,))
+    await conn.commit()
+    await conn.close()
 
 
 # Get temp data
-def get_temp(memberID):
-    c = conn.cursor()
-    c.execute("""
+async def get_temp(memberID):
+    conn = await db_connect()
+    c = await conn.cursor()
+    sql = """
     SELECT *
     FROM temp
-    WHERE member_id = ?;""", (memberID,))
-    return c.fetchone()
+    WHERE member_id = ?;"""
+    await c.execute(sql, (memberID,))
+    fetched = await c.fetchone()
+    await conn.close()
+    return fetched
 
 
 # Delete temp data when finished
-def del_temp(memberID):
-    c = conn.cursor()
-    c.execute("""
+async def del_temp(memberID):
+    conn = await db_connect()
+    c = await conn.cursor()
+    sql = """
     DELETE FROM temp
-    WHERE member_id = ?;""", (memberID,))
-    conn.commit()
+    WHERE member_id = ?;"""
+    await c.execute(sql, (memberID,))
+    await conn.commit()
+    await conn.close()

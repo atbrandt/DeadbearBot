@@ -1,5 +1,6 @@
 import os
 import math
+import asyncio
 from datetime import datetime, date
 from typing import Union, Optional
 from pathlib import Path
@@ -8,6 +9,7 @@ import discord
 from discord.ext import commands
 from discord.utils import get
 import db
+import migration
 
 
 # Setting platform-independent path to environment variables
@@ -29,7 +31,7 @@ else:
 async def get_alias(bot, message):
     if message.guild:
         guild = message.guild.id
-        prefix = db.get_cfg(guild, 'bot_alias')
+        prefix = await db.get_cfg(guild, 'bot_alias')
         if prefix:
             return prefix
     return "-"
@@ -57,8 +59,8 @@ convColour = commands.ColourConverter()
 
 # Checking perms before executing command
 def check_perms():
-    def predicate(ctx):
-        permrole = db.get_cfg(ctx.guild.id, 'perm_role')
+    async def predicate(ctx):
+        permrole = await db.get_cfg(ctx.guild.id, 'perm_role')
         gotRole = ctx.guild.get_role(permrole)
         roles = ctx.author.roles
         return gotRole in roles
@@ -73,11 +75,11 @@ class Menu:
         self.fields = fields
         fmax = 9
         self.pages = math.ceil(len(self.fields)/fmax)
-        self.pfields = [self.fields[i*fmax:(i+1)*fmax] for i in range(self.pages)]
+        self.pfs = [self.fields[i*fmax:(i+1)*fmax] for i in range(self.pages)]
 
     def embedded(self):
         embeds = []
-        for index, page in enumerate(self.pagefields, 1):
+        for index, page in enumerate(self.pfs, 1):
             embed = discord.Embed(title=self.title, description=self.desc)
             for item in page:
                 embed.add_field(name=item['fname'], value=item['fdesc'])
@@ -178,7 +180,7 @@ async def hello_world(ctx):
 @commands.guild_only()
 @commands.is_owner()
 async def change_prefix(ctx, prefix):
-    db.set_cfg(ctx.guild.id, 'bot_alias', prefix)
+    await db.set_cfg(ctx.guild.id, 'bot_alias', prefix)
     await ctx.channel.send(f"My command prefix is now \"{prefix}\".")
 
 
@@ -190,7 +192,7 @@ async def change_prefix(ctx, prefix):
 @commands.guild_only()
 @commands.is_owner()
 async def set_perms(ctx, role: discord.Role):
-    db.set_cfg(ctx.guild.id, 'perm_role', role.id)
+    await db.set_cfg(ctx.guild.id, 'perm_role', role.id)
     await ctx.channel.send(f"Added \"{role.name}\" to perm roles.")
 
 
@@ -274,12 +276,12 @@ async def toggle_role(ctx, role: discord.Role, member: discord.Member):
 @commands.guild_only()
 @commands.is_owner()
 async def auto_role(ctx, role: discord.Role):
-    autorole = db.get_cfg(ctx.guild.id, 'auto_role')
+    autorole = await db.get_cfg(ctx.guild.id, 'auto_role')
     if autorole is None:
-        db.set_cfg(ctx.guild.id, 'auto_role', role.id)
+        await db.set_cfg(ctx.guild.id, 'auto_role', role.id)
         await ctx.channel.send(f"Added \"{role.name}\" to auto-role.")
     else:
-        db.set_cfg(ctx.guild.id, 'auto_role', None)
+        await db.set_cfg(ctx.guild.id, 'auto_role', None)
         await ctx.channel.send(f"Removed \"{role.name}\" from auto-role.")
 # ctx.channel.send("No role found! Check the name or ID entered.")
 
@@ -292,12 +294,12 @@ async def auto_role(ctx, role: discord.Role):
 @commands.guild_only()
 @commands.is_owner()
 async def starboard(ctx, channel: discord.TextChannel=None):
-    starboard = db.get_cfg(ctx.guild.id, 'star_channel')
+    starboard = await db.get_cfg(ctx.guild.id, 'star_channel')
     if starboard is None:
-        db.set_cfg(ctx.guild.id, 'star_channel', channel.id)
+        await db.set_cfg(ctx.guild.id, 'star_channel', channel.id)
         await ctx.channel.send(f"Set \"{channel.name}\" as the star board.")
     else:
-        db.set_cfg(ctx.guild.id, 'star_channel', None)
+        await db.set_cfg(ctx.guild.id, 'star_channel', None)
         await ctx.channel.send(f"Starboard disabled.")
 
 
@@ -311,9 +313,9 @@ async def starboard(ctx, channel: discord.TextChannel=None):
 @check_perms()
 async def profile(ctx, member: discord.Member=None):
     if member:
-        dbprof = db.get_member(ctx.guild.id, member.id)
+        dbprof = await db.get_member(ctx.guild.id, member.id)
     else:
-        dbprof = db.get_member(ctx.guild.id, ctx.author.id)
+        dbprof = await db.get_member(ctx.guild.id, ctx.author.id)
         member = ctx.author
     if dbprof['birthday']:
         born = datetime.strptime(dbprof['birthday'], '%Y-%m-%d')
@@ -373,13 +375,13 @@ async def profile(ctx, member: discord.Member=None):
 @commands.guild_only()
 @check_perms()
 async def profile_edit(ctx):
-    temp = db.get_temp(ctx.author.id)
+    temp = await db.get_temp(ctx.author.id)
     if temp:
-        db.del_temp(ctx.author.id)
+        await db.del_temp(ctx.author.id)
     embeds = ProfileMenu.embedded()
     message = await ctx.author.send(embed=embeds[0])
     await ctx.channel.send("Check your messages, I just sent you a DM!")
-    db.add_temp(ctx.guild.id, ctx.author.id)
+    await db.add_temp(ctx.guild.id, ctx.author.id)
     await message.add_reaction(u"\u25C0")
     await message.add_reaction(u"\u25B6")
     for index, item in enumerate(embeds[0].fields):
@@ -398,10 +400,10 @@ async def profile_edit(ctx):
 @commands.is_owner()
 async def gjoin(ctx, channel: discord.TextChannel=None):
     if channel:
-        db.set_cfg(ctx.guild.id, 'join_channel', channel.id)
+        await db.set_cfg(ctx.guild.id, 'join_channel', channel.id)
         await ctx.channel.send(f"Greeting enabled for \"{channel.name}\".")
     else:
-        db.set_cfg(ctx.guild.id, 'join_channel', None)
+        await db.set_cfg(ctx.guild.id, 'join_channel', None)
         await ctx.channel.send("Greeting disabled.")
 
 
@@ -413,7 +415,7 @@ async def gjoin(ctx, channel: discord.TextChannel=None):
 @commands.guild_only()
 @commands.is_owner()
 async def gjoin_message(ctx, *, message: str):
-    db.set_cfg(ctx.guild.id, 'join_message', message)
+    await db.set_cfg(ctx.guild.id, 'join_message', message)
     await ctx.channel.send(f"The join message is now: \"{message}\"")
 
 
@@ -428,10 +430,10 @@ async def gjoin_message(ctx, *, message: str):
 @commands.is_owner()
 async def gleave(ctx, channel: discord.TextChannel=None):
     if channel:
-        db.set_cfg(ctx.guild.id, 'leave_channel', channel.id)
+        await db.set_cfg(ctx.guild.id, 'leave_channel', channel.id)
         await ctx.channel.send(f"Farewells enabled for \"{channel.name}\".")
     else:
-        db.set_cfg(ctx.guild.id, 'leave_channel', None)
+        await db.set_cfg(ctx.guild.id, 'leave_channel', None)
         await ctx.channel.send("Farewells disabled.")
 
 
@@ -443,7 +445,7 @@ async def gleave(ctx, channel: discord.TextChannel=None):
 @commands.guild_only()
 @commands.is_owner()
 async def gleave_message(ctx, *, message: str):
-    db.set_cfg(ctx.guild.id, 'leave_message', message)
+    await db.set_cfg(ctx.guild.id, 'leave_message', message)
     await ctx.channel.send(f"The farewell message is now: \"{message}\"")
 
 
@@ -464,9 +466,9 @@ async def add_rr(ctx,
     guildID = ctx.guild.id
     hookID = str(message.channel.id) + "-" + str(message.id)
     if type(emoji) is str:
-        exists, rrID = db.add_reaction_role(guildID, hookID, emoji, role.id)
+        exists, rrID = await db.add_reaction_role(guildID, hookID, emoji, role.id)
     else:
-        exists, rrID = db.add_reaction_role(guildID, hookID, emoji.id, role.id)
+        exists, rrID = await db.add_reaction_role(guildID, hookID, emoji.id, role.id)
     if not exists:
         await message.add_reaction(emoji)
         await ctx.channel.send(f"Set \"{emoji}\" to give the \"{role.name}\" "
@@ -484,7 +486,7 @@ async def add_rr(ctx,
 @commands.guild_only()
 @commands.is_owner()
 async def delete_rr(ctx, rrID):
-    exists = db.del_reaction_role(rrID)
+    exists = await db.del_reaction_role(rrID)
     if exists:
         await ctx.channel.send(f"Removed reaction role entry {rrID}.")
     else:
@@ -499,7 +501,7 @@ async def delete_rr(ctx, rrID):
 @commands.guild_only()
 @commands.is_owner()
 async def list_rr(ctx):
-    roles = dict(db.get_reaction_roles(ctx.guild.id))
+    roles = dict(await db.get_reaction_roles(ctx.guild.id))
     await ctx.channel.send(roles)
 
 
@@ -514,7 +516,7 @@ async def list_rr(ctx):
 @commands.is_owner()
 async def add_vr(ctx, vchannel: discord.VoiceChannel, role: discord.Role):
     guildID = ctx.guild.id
-    exists, vrID = db.add_voice_role(guildID, vchannel.id, role.id)
+    exists, vrID = await db.add_voice_role(guildID, vchannel.id, role.id)
     if not exists:
         await ctx.channel.send(f"Users joining \"{vchannel.name}\" will "
                                f"automatically get the \"{role.name}\" "
@@ -531,7 +533,7 @@ async def add_vr(ctx, vchannel: discord.VoiceChannel, role: discord.Role):
 @commands.guild_only()
 @commands.is_owner()
 async def delete_vr(ctx, vrID):
-    exists = db.del_voice_role(vrID)
+    exists = await db.del_voice_role(vrID)
     if exists:
         await ctx.channel.send(f"Removed reaction role entry {vrID}.")
     else:
@@ -546,7 +548,7 @@ async def delete_vr(ctx, vrID):
 @commands.guild_only()
 @commands.is_owner()
 async def list_vr(ctx):
-    roles = dict(db.get_voice_roles(ctx.guild.id))
+    roles = dict(await db.get_voice_roles(ctx.guild.id))
     await ctx.channel.send(roles)
 
 
@@ -571,7 +573,7 @@ async def alert_gain(ctx,
                      channel: discord.TextChannel,
                      *, message: str):
     guildID = ctx.guild.id
-    arID = db.add_role_alert(guildID, role.id, 'gain_role', channel.id, message)
+    arID = await db.add_role_alert(guildID, role.id, 'gain_role', channel.id, message)
     await ctx.channel.send(f"When a user gains \"{role.name}\", an alert will "
                            f"be sent to \"{channel.name}\" with the message: "
                            f"{message}.\nID = {arID}")
@@ -587,7 +589,7 @@ async def alert_lose(ctx,
                      channel: discord.TextChannel,
                      *, message: str):
     guildID = ctx.guild.id
-    arID = db.add_role_alert(guildID, role.id, 'lose_role', channel.id, message)
+    arID = await db.add_role_alert(guildID, role.id, 'lose_role', channel.id, message)
     await ctx.channel.send(f"When a user loses \"{role.name}\", an alert will "
                            f"be sent to \"{channel.name}\" with the message: "
                            f"{message}.\nID = {arID}")
@@ -601,7 +603,7 @@ async def alert_lose(ctx,
 @commands.guild_only()
 @commands.is_owner()
 async def delete_alert(ctx, uuID):
-    exists = db.del_role_alert(uuID)
+    exists = await db.del_role_alert(uuID)
     if exists:
         await ctx.channel.send(f"Removed reaction role entry {uuID}.")
     else:
@@ -690,7 +692,7 @@ async def convert_payload(payload, type, event=None):
 
 # Handler for guild reaction events
 async def greact_event(guild, member, channel, message, emoji, event):
-    reactionroles = db.get_reaction_roles(guild.id)
+    reactionroles = await db.get_reaction_roles(guild.id)
     if reactionroles:
         hookID = f"{channel.id}-{message.id}"
         for item in reactionroles:
@@ -702,10 +704,10 @@ async def greact_event(guild, member, channel, message, emoji, event):
                     await member.remove_roles(role, reason="ReactionRole")
     if emoji != u"\U0001F31F":
         return
-    starboard = db.get_cfg(guild.id, 'star_channel')
+    starboard = await db.get_cfg(guild.id, 'star_channel')
     if starboard:
         starchannel = guild.get_channel(starboard)
-        threshold = db.get_cfg(guild.id, 'star_threshold')
+        threshold = await db.get_cfg(guild.id, 'star_threshold')
         reacts = message.reactions
         reaction = next((i for i in reacts if i.emoji == emoji), 0)
         if reaction.count >= threshold:
@@ -720,7 +722,7 @@ async def preact_event(user, channel, message, emoji, event):
     if not embed:
         return
     if emoji == u"\u274C":
-        db.del_temp(user.id)
+        await db.del_temp(user.id)
         await message.delete()
         await channel.send("Menu closed.")
         return
@@ -735,21 +737,21 @@ async def preact_event(user, channel, message, emoji, event):
     page = int(embed.footer.text[5:6]) - 1
     if embed.title == ProfileMenu.title:
         if event == 'add':
-            options = ProfileMenu.pfields[page]
+            options = ProfileMenu.pfs[page]
             selected = options[index]
             reply = (
                 f"{selected['prompt']} \n\n "
                 f"Character limit: {selected['chars']}")
             await message.edit(content=reply, embed=embed)
-            db.set_temp(user.id, selected['fname'])
+            await db.set_temp(user.id, selected['fname'])
         else:
             await message.edit(content=None, embed=embed)
-            db.set_temp(user.id, None)
+            await db.set_temp(user.id, None)
 
 
 # Add star to starboard
 async def star_add(message, starboard):
-    starred = db.get_starred(message.id)
+    starred = await db.get_starred(message.id)
     if not starred:
         embed = discord.Embed(description=message.content)
         embed.set_author(name=message.author.display_name,
@@ -770,18 +772,19 @@ async def star_add(message, starboard):
         embed.add_field(name="--",
                         value=f"[Jump to original...]({message.jump_url})",
                         inline=False)
-        embed.set_footer(text=f"Originally sent {message.created_at}")
+        embed.set_footer(text="Originally sent")
+        embed.timestamp = message.created_at
         newstar = await starboard.send(embed=embed)
-        db.add_starred(message.guild.id, message.id, newstar.id)
+        await db.add_starred(message.guild.id, message.id, newstar.id)
 
 
 # Remove star from starboard
 async def star_remove(message, starboard):
-    starred = db.get_starred(message.id)
+    starred = await db.get_starred(message.id)
     if starred:
         oldstar = await starboard.fetch_message(starred['starred_id'])
         await oldstar.delete()
-        db.del_starred(message.id)
+        await db.del_starred(message.id)
 
 
 # Do stuff to members upon joining guild
@@ -789,14 +792,14 @@ async def star_remove(message, starboard):
 async def on_member_join(member):
     guildID = member.guild.id
     if not member.bot:
-        db.add_member(guildID, member.id, member.created_at, member.joined_at)
-    autorole = db.get_cfg(guildID, 'auto_role')
+        await db.add_member(guildID, member.id, member.created_at, member.joined_at)
+    autorole = await db.get_cfg(guildID, 'auto_role')
     if autorole:
         role = member.guild.get_role(autorole)
         await member.add_roles(role, reason="AutoRole")
-    joinalert = db.get_cfg(guildID, 'join_channel')
+    joinalert = await db.get_cfg(guildID, 'join_channel')
     if joinalert:
-        message = db.get_cfg(guildID, 'join_message')
+        message = await db.get_cfg(guildID, 'join_message')
         channel = bot.get_channel(joinalert)
         await channel.send(message.format(member=member))
 
@@ -805,9 +808,9 @@ async def on_member_join(member):
 @bot.event
 async def on_member_remove(member):
     guildID = member.guild.id
-    leavealert = db.get_cfg(guildID, 'leave_channel')
+    leavealert = await db.get_cfg(guildID, 'leave_channel')
     if leavealert is not None:
-        message = db.get_cfg(guildID, 'leave_message')
+        message = await db.get_cfg(guildID, 'leave_message')
         channel = bot.get_channel(leavealert)
         await channel.send(message.format(member=member))
 
@@ -822,13 +825,13 @@ async def on_member_update(before, after):
         roles = [i for i in after.roles if i not in s]
         alerts = []
         for role in roles:
-            alerts.append(db.get_role_alert(role.id, 'gain_role'))
+            alerts.append(await db.get_role_alert(role.id, 'gain_role'))
     else:
         s = set(after.roles)
         roles = [i for i in before.roles if i not in s]
         alerts = []
         for role in roles:
-            alerts.append(db.get_role_alert(role.id, 'lose_role'))
+            alerts.append(await db.get_role_alert(role.id, 'lose_role'))
     if len(alerts):
         for alert in alerts:
             channel = after.guild.get_channel(alert['channel_id'])
@@ -838,7 +841,7 @@ async def on_member_update(before, after):
 # Voice Role hook function
 @bot.event
 async def on_voice_state_update(member, before, after):
-    roles = db.get_voice_roles(member.guild.id)
+    roles = await db.get_voice_roles(member.guild.id)
     if not roles:
         return
     if before.channel:
@@ -858,12 +861,12 @@ async def on_voice_state_update(member, before, after):
 async def on_message(message):
     if not message.author.bot:
         if message.guild:
-            stats = db.get_cfg(message.guild.id, 'guild_stats')
+            stats = await db.get_cfg(message.guild.id, 'guild_stats')
             if stats == 'enabled':
                 await guild_stats(message)
         else:
-            temp = db.get_temp(message.author.id)
-            if temp:
+            temp = await db.get_temp(message.author.id)
+            if temp['selected']:
                 await edit_profile_option(message, temp)
     await bot.process_commands(message)
 
@@ -872,24 +875,24 @@ async def on_message(message):
 async def guild_stats(message):
     member = message.author
     guildID = message.guild.id
-    profile = db.get_member(guildID, member.id)
+    profile = await db.get_member(guildID, member.id)
     curxp = profile['xp'] + 1
-    db.set_member(guildID, member.id, option='xp', value=curxp)
+    await db.set_member(guildID, member.id, option='xp', value=curxp)
     nextlevel = profile['lvl'] + 1
     levelup = math.floor(curxp / ((2 * nextlevel) ** 2))
     if levelup == 1:
         channel = message.channel
         await channel.send(f"**{member.name}** has leveled up to **level "
                            f"{nextlevel}!**")
-        db.set_member(guildID, member.id, option='lvl', value=nextlevel)
+        await db.set_member(guildID, member.id, option='lvl', value=nextlevel)
 
 
 # Profile edit function
 async def edit_profile_option(message, temp):
     option = ProfileMenu.tempselect(temp['selected'])
     if message.content.lower() == "clear":
-        db.set_member(guild, member, option['dbval'], None)
-        db.set_temp(message.author.id, None)
+        await db.set_member(guild, member, option['dbval'], None)
+        await db.set_temp(message.author.id, None)
         await message.channel.send("Option cleared!")
     elif len(message.content) <= option['chars']:
         if option['format'] == 'list':
@@ -903,8 +906,8 @@ async def edit_profile_option(message, temp):
                 return
         else:
             setting = message.content
-        db.set_member(temp['guild_id'], temp['member_id'], option['dbval'], setting)
-        db.set_temp(message.author.id, None)
+        await db.set_member(temp['guild_id'], temp['member_id'], option['dbval'], setting)
+        await db.set_temp(message.author.id, None)
         await message.channel.send("Option set!")
     else:
         await message.channel.send("Over character limit!")
@@ -944,18 +947,22 @@ async def on_ready():
     guilds = bot.guilds
     for guild in guilds:
         gID = guild.id
-        db.add_guild(gID)
+        await db.add_guild(gID)
         members = guild.members
         for member in members:
             if not member.bot:
                 mID = member.id
                 created = member.created_at
                 joined = member.joined_at
-                db.add_member(gID, mID, created, joined)
+                await db.add_member(gID, mID, created, joined)
     print(f"{bot.user.name} is ready, user ID is {bot.user.id}")
     print("------")
 
 
 # Run the program
-db.setup_db()
-bot.run(token)
+def main():
+    migration.migrate()
+    bot.run(token)
+
+if __name__ == '__main__':
+    main()
