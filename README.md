@@ -9,22 +9,22 @@ A [Discord](https://discordapp.com/) server management bot, inspired by [NadekoB
 
 ## What's it do?
 Currently, DeadbearBot can:
-* Assign or unassign a role to a target user
+* Say things in nicely formatted embeds, which can be edited later
+* Track user profiles and allow users to customize with personal info
+* Track user xp and levels as part of their profile
+* "Star" messages in a channel, preserving them even if they are modified or deleted later
+* Assign or unassign a role
 * Automatically assign a role to users when joining your server
-* Allow users to assign roles to themselves by clicking a fully configurable emoji reaction
-* Automatically assign a role to a user when connecting to a voice channel
 * Set a configurable greeting and/or leave message to be sent when users join or leave your server
-* Send a list of all channels/roles/emojis on the server
+* Automatically assign a role to a user when connecting to a voice channel
+* Allow users to assign roles to themselves by clicking emoji reactions
+* Set a configurable alert message to be sent when users gain or lose a role
 
 ## What's planned for the future?
 The current todo list includes:
-* Make the bot say things in nicely formatted messages
 * Make the bot programmatically log certain events in a server to a specified channel
 * Add mute/kick/ban functions to the bot
-* Assign multiple roles to users when joining the server
-* Allow greeting/leave messages to be sent at a channel level
 * A configurable permission system that allows enabling/disabling commands for users, roles, or channels
-* An experience or reputation system of some kind that tracks user data
 * A currency system that allows buying things in a configurable shop
 * A raffling system that allows submitting steam keys to the bot to be raffled out to users or bought with currency
 * Some kind of image manipulation system a-la the defunct NotSoBot?
