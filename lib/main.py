@@ -472,8 +472,8 @@ async def starboard(ctx, channel: discord.TextChannel=None):
 
 
 # Daily cash award
-@bot.command(name='DailyCash',
-             aliases=['daily', 'cash', 'cashme', 'dailycash', 'getmoney'])
+@bot.command(name='DailyCredits',
+             aliases=['daily', 'credits', 'cashme', 'dailycredits', 'getmoney'])
 @commands.guild_only()
 @check_perms()
 async def daily_cash(ctx):
