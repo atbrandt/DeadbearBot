@@ -140,7 +140,7 @@ async def set_member(guildID, memberID, option, value):
 
 
 # Returns all reaction roles of a given guild
-async def get_reaction_roles(guildID):
+async def get_react_roles(guildID):
     conn = await db_connect()
     c = await conn.cursor()
     sql = """
@@ -154,7 +154,7 @@ async def get_reaction_roles(guildID):
 
 
 # Adds a reaction role to database, excepting on exact duplicates
-async def add_reaction_role(guildID, hookID, emoji, roleID):
+async def add_react_role(guildID, hookID, emoji, roleID):
     conn = await db_connect()
     c = await conn.cursor()
     sql = """
@@ -187,7 +187,7 @@ async def add_reaction_role(guildID, hookID, emoji, roleID):
 
 
 # Removes a reaction role from database by its unique ID, if it exists
-async def del_reaction_role(UUID):
+async def del_react_role(UUID):
     conn = await db_connect()
     c = await conn.cursor()
     sql = """
@@ -379,31 +379,79 @@ async def del_role_alert(UUID):
         return False
 
 
+# Add custom role when purchased
+async def add_custom_role(guildID, memberID, roleID):
+    conn = await db_connect()
+    c = await conn.cursor()
+    sql = """
+    INSERT INTO custom_roles (
+        guild_id,
+        member_id,
+        role_id
+    )
+    VALUES
+        (?, ?, ?);"""
+    await c.execute(sql, (guildID, memberID, roleID,))
+    await conn.commit()
+    await conn.close()
+
+
+# Get custom role
+async def get_custom_role(guildID, memberID):
+    conn = await db_connect()
+    c = await conn.cursor()
+    sql = """
+    SELECT *
+    FROM custom_roles
+    WHERE guild_id = ?
+    AND member_id = ?;"""
+    await c.execute(sql, (guildID, memberID,))
+    fetched = await c.fetchone()
+    await conn.close()
+    return fetched
+
+
+# Delete custom role entry when the role itself is deleted
+async def del_custom_role(guildID, roleID):
+    conn = await db_connect()
+    c = await conn.cursor()
+    sql = """
+    DELETE FROM custom_roles
+    WHERE guild_id = ?
+    AND role_id = ?;"""
+    await c.execute(sql, (guildID, roleID,))
+    await conn.commit()
+    await conn.close()
+
+
 # Set temp data in case the bot goes down mid-process
-async def add_temp(guildID, memberID):
+async def add_temp(guildID, memberID, menu, selected):
     conn = await db_connect()
     c = await conn.cursor()
     sql = """
     INSERT OR REPLACE INTO temp (
         guild_id,
-        member_id
+        member_id,
+        menu,
+        selected
     )
     VALUES
-        (?, ?);"""
-    await c.execute(sql, (guildID, memberID,))
+        (?, ?, ?, ?);"""
+    await c.execute(sql, (guildID, memberID, menu, selected,))
     await conn.commit()
     await conn.close()
 
 
-# Update the menu layer a user is currently on
-async def set_temp(memberID, selected):
+# Updates temp data
+async def set_temp(guildID, memberID, value):
     conn = await db_connect()
     c = await conn.cursor()
     sql = """
     UPDATE temp
-    SET selected = ?
-    WHERE member_id = ?;"""
-    await c.execute(sql, (selected, memberID,))
+    SET storage = ?
+    WHERE guild_id = ?
+    AND member_id = ?;"""
+    await c.execute(sql, (value, guildID, memberID,))
     await conn.commit()
     await conn.close()
 
