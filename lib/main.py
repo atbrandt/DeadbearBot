@@ -978,7 +978,7 @@ async def greact_event(payload, event):
     guild = bot.get_guild(payload.guild_id)
     reactionroles = await db.get_react_roles(guild.id)
     if reactionroles:
-        hookID = f"{channel.id}-{message.id}"
+        hookID = f"{payload.channel_id}-{payload.message_id}"
         for item in reactionroles:
             if hookID == item['hook_id'] and str(emoji) == item['emoji']:
                 role = guild.get_role(item['role_id'])
