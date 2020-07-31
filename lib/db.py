@@ -101,7 +101,7 @@ async def get_all_members(guildID):
     conn = await db_connect()
     c = await conn.cursor()
     sql = """
-    SELECT member_id
+    SELECT *
     FROM members
     WHERE guild_id = ?;"""
     await c.execute(sql, (guildID,))
