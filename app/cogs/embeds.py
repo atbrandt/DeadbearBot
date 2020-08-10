@@ -264,7 +264,7 @@ class Embeds(commands.Cog):
                 currency = await commands.EmojiConverter().convert(ctx, currency)
             except:
                 currency = "\U0001F48E"
-        desc = strings['desc'].format(currency, dbprof['cash'])
+        desc = strings['desc'].format(ctx.author.name, currency, dbprof['cash'])
         fields = []
         for item in strings['fields']:
             if item['available'] == 0:

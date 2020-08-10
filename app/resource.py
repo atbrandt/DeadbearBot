@@ -11,7 +11,7 @@ embeds = {'embeds': [
             {
             'name': "Shop",
             'head': "**{} Shop**",
-            'desc': "Your balance: {} {}\n\n*Buy somethin, will ya!*",
+            'desc': "*Buy somethin, will ya!*\n\n**{}** balance: {} {}",
             'fields': [
                 {
                 'fname': "Custom Role",
@@ -163,5 +163,6 @@ embeds = {'embeds': [
 
 
 if not embedyaml.is_file():
+    embedyaml.touch()
     with open(embedyaml, 'w') as stream:
         dump(embeds, stream, Dumper=Dumper, sort_keys=False, indent=4)
