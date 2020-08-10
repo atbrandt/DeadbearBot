@@ -1,7 +1,7 @@
 CREATE TABLE guildstemp(
     id INTEGER PRIMARY KEY UNIQUE,
     bot_alias TEXT,
-    guild_stats TEXT NOT NULL DEFAULT('enabled'),
+    guild_stats TEXT DEFAULT('enabled'),
     auto_role INTEGER,
     star_channel INTEGER,
     star_threshold INTEGER NOT NULL DEFAULT(3),

@@ -28,6 +28,22 @@ async def add_guild(guildID):
     await conn.close()
 
 
+# Returns all guilds that the bot has logged
+async def get_all_guilds():
+    conn = await db_connect()
+    c = await conn.cursor()
+    sql = """
+    SELECT id
+    FROM guilds;"""
+    await c.execute(sql)
+    fetched = await c.fetchall()
+    await conn.close()
+    guilds = []
+    for i in fetched:
+        guilds.append(fetched['id'])
+    return guilds
+
+
 # Returns a guild's config option from the guilds table
 async def get_cfg(guildID, option):
     conn = await db_connect()
@@ -356,6 +372,7 @@ async def get_role_alert(roleID, event):
     await conn.close()
     return fetched
 
+
 # Deletes a role alert for a given guild
 async def del_role_alert(UUID):
     conn = await db_connect()
@@ -443,7 +460,7 @@ async def add_temp(guildID, memberID, menu, selected):
 
 
 # Updates temp data
-async def set_temp(guildID, memberID, value):
+async def update_temp(temp, value):
     conn = await db_connect()
     c = await conn.cursor()
     sql = """
@@ -451,7 +468,7 @@ async def set_temp(guildID, memberID, value):
     SET storage = ?
     WHERE guild_id = ?
     AND member_id = ?;"""
-    await c.execute(sql, (value, guildID, memberID,))
+    await c.execute(sql, (value, temp['guild_id'], temp['member_id'],))
     await conn.commit()
     await conn.close()
 
