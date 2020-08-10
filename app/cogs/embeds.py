@@ -386,7 +386,8 @@ class Embeds(commands.Cog):
             if not gmember:
                 fields.append({'fname': f"\#{rank + 1} - "
                                         f"{member['member_id']} (Not Found)",
-                               'fdesc': f"{member['xp']} xp",
+                               'fdesc': f"**Level: {member['lvl']}** "
+                                        f"- {member['xp']} xp",
                                'inline': False})
             else:
                 fields.append({'fname': f"\#{rank + 1} - {gmember.name}",
