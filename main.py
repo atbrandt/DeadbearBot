@@ -59,7 +59,8 @@ async def shutdown(ctx):
 # Do stuff to members upon joining guild
 @bot.event
 async def on_member_join(self, member):
-    if not member.bot:
+    dbmember = await db.get_member(guild.id, member.id)
+    if not member.bot and not dbmember:
         await db.add_member(member.guild.id,
                             member.id,
                             member.created_at,
@@ -97,7 +98,8 @@ async def add_guild(guild):
             if role.managed and role.name == bot.user.name:
                 await db.set_cfg(guild.id, 'bot_role', role.id)
     for member in guild.members:
-        if not member.bot:
+        dbmember = await db.get_member(guild.id, member.id)
+        if not member.bot and not dbmember:
             await db.add_member(guild.id,
                                 member.id,
                                 member.created_at,
