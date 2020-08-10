@@ -258,24 +258,31 @@ class Embeds(commands.Cog):
         dbprof = await db.get_member(ctx.guild.id, ctx.author.id)
         strings = await self.get_strings('Shop')
         head = strings['head'].format(ctx.guild.name)
-        desc = strings['desc']
         currency = await db.get_cfg(ctx.guild.id, 'currency')
         if currency.isdigit():
-            currency = await commands.EmojiConverter().convert(ctx, currency)
+            try:
+                currency = await commands.EmojiConverter().convert(ctx, currency)
+            except:
+                currency = "\U0001F48E"
+        desc = strings['desc'].format(currency, dbprof['cash'])
         fields = []
         for item in strings['fields']:
             if item['available'] == 0:
                 item['fdesc'] = (f"{item['fdesc']}\n\n"
                                  f"Available: None\n"
-                                 f"Price: {currency} {item['price']}")
+                                 f"Price: {currency}")
             elif item['available'] < 0:
                 item['fdesc'] = (f"{item['fdesc']}\n\n"
                                  f"Available: \u221E\n"
-                                 f"Price: {currency} {item['price']}")
+                                 f"Price: {currency}")
             else:
                 item['fdesc'] = (f"{item['fdesc']}\n\n"
                                  f"Available: {item['available']}\n"
-                                 f"Price: {currency} {item['price']}")
+                                 f"Price: {currency}")
+            if item['price'] == 0:
+                item['fdesc'] = f"{item['fdesc']} Free"                
+            else:
+                item['fdesc'] = f"{item['fdesc']} {item['price']}"                
             if item['format'] == 'text':
                 item['prompt'] = (f"{item['prompt']}\n\n"
                                   f"Max length: {item['limit']} characters")
@@ -309,6 +316,7 @@ class Embeds(commands.Cog):
                 if Shop.selected['available'] > 0:
                     await self.set_strings('Shop',
                                            Shop.selected['data'],
+                                           'available',
                                            Shop.selected['available'] - 1)
                 bought = True
         if bought:
@@ -345,28 +353,58 @@ class Embeds(commands.Cog):
             if (emojilimit - len(ctx.guild.emojis)) > 0:
                 max = emojilimit - len(ctx.guild.emojis)
                 if avail > max:
-                    await self.set_strings('Shop', selected['data'], max)
+                    await self.set_strings('Shop',
+                                           selected['data'],
+                                           'available',
+                                           max)
                     reply = (f"Available custom emoji in the shop set to "
                              f"{max} (maximum available for this guild).")
                 elif avail < 0:
-                    await self.set_strings('Shop', selected['data'], 0)
+                    await self.set_strings('Shop',
+                                           selected['data'],
+                                           'available',
+                                           0)
                     reply = (f"Available custom emoji in the shop set to 0 "
                              f"(this item can't be infinite).")
                 else:
-                    await self.set_strings('Shop', selected['data'], avail)
+                    await self.set_strings('Shop',
+                                           selected['data'],
+                                           'available',
+                                           avail)
                     reply = (f"Available custom emoji in the shop set to "
                              f"{avail}.")
             else:
                 await ctx.channel.send("Max custom emoji slots reached!")
                 return
         else:
-            await self.set_strings('Shop', selected['data'], avail)
+            await self.set_strings('Shop', selected['data'], 'available', avail)
             if avail < 0:
-                reply = (f"Set number of {data} available in the shop to "
-                         f"infinite.")
+                reply = (f"Set number of {selected['fname']} available in "
+                         f"the shop to infinite.")
             else:
-                reply = (f"Set number of {data} available in the shop to "
-                         f"{avail}.")
+                reply = (f"Set number of {selected['fname']} available in "
+                         f"the shop to {avail}.")
+        await ctx.channel.send(content=reply)
+
+
+    # Command to set item price in the shop
+    @shop.command(name='price')
+    @commands.guild_only()
+    @check_perms()
+    async def price(self, ctx, data: str, price: int):
+        strings = await self.get_strings('Shop')
+        for item in strings['fields']:
+            if item['data'] == data.lower():
+                selected = item
+        if not selected:
+            await ctx.channel.send("Shop item not found!")
+            return
+        if price <= 0:
+            reply = f"Set price of {selected['fname']} to free."
+            await self.set_strings('Shop', selected['data'], 'price', 0)
+        else:
+            reply = f"Set price of {selected['fname']} to {price}"
+            await self.set_strings('Shop', selected['data'], 'price', price)
         await ctx.channel.send(content=reply)
 
 
@@ -611,13 +649,13 @@ class Embeds(commands.Cog):
                 return item
 
 
-    async def set_strings(self, name, data, value):
+    async def set_strings(self, name, data, key, value):
         with open(STRINGPATH, 'r') as stream:
             loaded = load(stream, Loader=Loader)
         for item in loaded['embeds']:
             if item['name'] == name:
                 for field in item['fields']:
                     if field['data'] == data:
-                        field['available'] = value
+                        field[key] = value
         with open(STRINGPATH, 'w') as stream:
             dump(loaded, stream, Dumper=Dumper, sort_keys=False, indent=4)

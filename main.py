@@ -5,6 +5,7 @@ import discord
 from discord.ext import commands
 from app import db
 from app import migration
+from app import resources
 from app.cogs import generic
 from app.cogs import config
 from app.cogs import embeds

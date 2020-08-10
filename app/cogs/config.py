@@ -197,7 +197,7 @@ class Config(commands.Cog):
         if channel.is_nsfw() and not starnsfw:
             return
         message = await channel.fetch_message(payload.message_id)
-        if message.author == self.bot:
+        if message.author.bot:
             return
         threshold = await db.get_cfg(guild.id, 'star_threshold')
         starred = await db.get_starred(message.id)
@@ -208,7 +208,7 @@ class Config(commands.Cog):
                     await self.star_add(message, starchannel)
                     break
         else:
-            if not message.reactions:
+            if len(message.reactions) < 2:
                 await self.star_remove(starchannel, starred)
             else:
                 for react in message.reactions:

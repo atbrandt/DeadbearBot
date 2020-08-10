@@ -39,3 +39,4 @@ __pycache__
 # Files needed for operation #
 ######################
 *.env
+*.yaml
