@@ -567,7 +567,10 @@ class Embeds(commands.Cog):
                 botRoleID = await db.get_cfg(guild.id, 'bot_role')
                 botRole = guild.get_role(botRoleID)
                 position = botRole.position - 1
-                await role.edit(position=position, reason="Shop purchase")
+                try:
+                    await role.edit(position=position, reason="Shop purchase")
+                except:
+                    print("bing")
                 member = guild.get_member(temp['member_id'])
                 await db.add_custom_role(guild.id, member.id, role.id)
                 await member.add_roles(role, reason="Shop purchase")
