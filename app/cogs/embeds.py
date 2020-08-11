@@ -564,7 +564,7 @@ class Embeds(commands.Cog):
                                                name=temp['storage'],
                                                color=converted, 
                                                mentionable=True)
-                botRoleID = await db.get_cfg(self.guild.id, 'bot_role')
+                botRoleID = await db.get_cfg(guild.id, 'bot_role')
                 botRole = guild.get_role(botRoleID)
                 position = botRole.position - 1
                 await role.edit(position=position, reason="Shop purchase")
