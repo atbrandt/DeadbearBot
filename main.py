@@ -93,7 +93,8 @@ async def on_ready():
 async def add_guild(guild):
     await db.add_guild(guild.id)
     botrole = await db.get_cfg(guild.id, 'bot_role')
-    if not botrole['bot_role']:
+    print(botrole)
+    if not botrole:
         botmember = guild.get_member(bot.user.id)
         for role in botmember.roles:
             if role.managed and role.name == bot.user.name:
