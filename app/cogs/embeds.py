@@ -630,11 +630,11 @@ class Embeds(commands.Cog):
             convert = discord.Color(colors[color])
         else:
             try:
-                convert = int(f"0x{color}", 0)
+                color = int(f"0x{color}", 0)
                 convert = discord.Color(color)
             except ValueError:
                 try:
-                    convert = int(f"{color}", 0)
+                    color = int(f"{color}", 0)
                     convert = discord.Color(color)
                 except TypeError:
                     return
