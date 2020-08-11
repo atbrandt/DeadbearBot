@@ -196,7 +196,7 @@ class Embeds(commands.Cog):
         await ctx.author.send(content=reply)
         await db.add_temp(ctx.guild.id,
                           ctx.author.id,
-                          "Profile",
+                          "Manager",
                           PM.selected['data'])
 
 
@@ -451,6 +451,7 @@ class Embeds(commands.Cog):
                 for item in strings['fields']:
                     if item['data'] == temp['selected']:
                         selected = item
+                        break
                 if temp['menu'] == 'Shop':
                     await self.purchase(message, selected, temp)
                 elif temp['menu'] == 'Manager':

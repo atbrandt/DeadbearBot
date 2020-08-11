@@ -36,4 +36,45 @@ The current todo list includes:
 [Wikipedia: Reinventing the wheel](https://en.wikipedia.org/wiki/Reinventing_the_wheel)
 
 
+## Command List ##
+Profile Commands
+[-prof / -profile] - Display your profile information
+[-prof e / -profile edit] - Bring up the profile management menu to change your profile display
+[-lb / -leaderboard] - Display the server leaderboard
+
+Shop Commands
+[-shop] - Bring up the shop
+[-daily / -cashme / -getmoney] - Get a free boost of credits, available once every 24 hours
+
+Config Commands (owner only)
+[-prefix] - Change the [prefix] for bot commands (default: '-')
+[-stats] - Enable or disable XP tracking and level-ups for the server.
+[-say] - Have the bot send some [text] in an embed.
+[-say e] - Edit a [message_id] with a different set of [text]
+
+[-gj / -guildjoin] - Set a [channel_id] for greeting messages to be sent when new people join.
+[-gj msg / -guildjoin message] - Set the [text] to be sent when new people join.
+[-gl / -guildleave] - Set a [channel_id] for greeting messages to be sent when new people join.
+[-gj msg / -guildleave message] - Set the [text] to be sent when new people join.
+
+[-setcur / -setcurrency] - Set the [emoji] to use as the currency symbol
+[-shop avail / -shop available] - Set an [item] to have a [number] available in shop
+[-shop price] - Set [price] of [item] in the shop
+
+[-star / -starboard] - Enable saving messages by setting a [channel_id] for them to go to.
+[-star threshold / -starboard threshold] - Set [threshold] of emoji reacts before a message is starred.
+
+[-trole / -togglerole] - Give or remove a [role_id] to yourself or a [member].
+[-arole / -autorole] - Set a [role_id] to be added to any member that joins the server.
+[-permrole / -permissionrole] - Set the [role_id] required to be able to use non-owner commands.
+
+[-rr / -reactionrole] - Set a [channel-message] to have a react [emoji] that when clicked gives a role by its[role_id].
+[-rr del] - Deletes a reaction role by its [unique_id]
+[-rr list] - Lists all reaction roles and their id's
+
+[-vr / -voicerole] - Set a [voice channel_id] to have a [role_id] that gets automatically added/removed when that channel is joined or left.
+[-vr del] - Deletes a voice role by its [unique_id]
+[-vr list] - Lists all voice roles and their id's
+
+
 ### If you like this project, consider tipping me on [Patreon](https://www.patreon.com/DEADBEAR)

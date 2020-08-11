@@ -61,3 +61,4 @@ class Generic(commands.Cog):
     async def on_message_delete(self, message):
         pass
 
+# add blurbs, reminders, birthday alerts

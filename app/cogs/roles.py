@@ -51,20 +51,21 @@ class Roles(commands.Cog):
 
 
     # Command to set a reaction role
-    @commands.command(name='ReactionRole',
-                 description="Create a reaction role using a channel-messsage id, "
-                             "emoji, and role id. To get a channel-message ID, "
-                             "open the 3-dot menu for a message and shift-click "
-                             "the \"Copy ID\" button.",
-                 brief="Create a reaction role",
-                 aliases=['rr'])
+    @commands.group(name='ReactionRole',
+                    description="Create a reaction role using a channel-messsage id, "
+                                "emoji, and role id. To get a channel-message ID, "
+                                "open the 3-dot menu for a message and shift-click "
+                                "the \"Copy ID\" button.",
+                    brief="Create a reaction role",
+                    aliases=['rr'],
+                    invoke_without_command=True)
     @commands.guild_only()
     @commands.is_owner()
-    async def add_rr(self,
-                     ctx,
-                     message: discord.Message,
-                     emoji: Union[discord.Emoji, str],
-                     role: discord.Role):
+    async def reaction_role(self,
+                            ctx,
+                            message: discord.Message,
+                            emoji: Union[discord.Emoji, str],
+                            role: discord.Role):
         gID = ctx.guild.id
         hookID = str(message.channel.id) + "-" + str(message.id)
         if type(emoji) is str:
@@ -81,13 +82,13 @@ class Roles(commands.Cog):
 
 
     # Command to delete a reaction role
-    @commands.command(name='DeleteReactionRole',
-                 description="Removes a reaction role by its ID.",
-                 brief="Remove a reaction role",
-                 aliases=['delrr'])
+    @reaction_role.command(name='Delete',
+                           description="Removes a reaction role by its ID.",
+                           brief="Remove a reaction role",
+                           aliases=['del'])
     @commands.guild_only()
     @commands.is_owner()
-    async def delete_rr(self, ctx, rrID):
+    async def rr_delete(self, ctx, rrID):
         exists = await db.del_react_role(rrID)
         if exists:
             await ctx.channel.send(f"Removed reaction role entry {rrID}.")
@@ -96,27 +97,28 @@ class Roles(commands.Cog):
 
 
     # Command to list all reaction roles
-    @commands.command(name='ListReactRoles',
-                 description="Lists all reaction roles for this guild.",
-                 brief="List reaction roles",
-                 aliases=['listrr'])
+    @reaction_role.command(name='List',
+                           description="Lists all reaction roles for this guild.",
+                           brief="List reaction roles",
+                           aliases=['list'])
     @commands.guild_only()
     @commands.is_owner()
-    async def list_rr(self, ctx):
+    async def rr_list(self, ctx):
         roles = dict(await db.get_react_roles(ctx.guild.id))
         await ctx.channel.send(roles)
 
 
     # Command to add a voice chat role
-    @commands.command(name='VoiceRole',
-                 description="Sets a role to be added to anyone that joins a "
-                             "specified voice channel. Pass a voice channel "
-                             "`name` or `id` and a role `name` or `id`.",
-                 brief="Add a voice role",
-                 aliases=['vr'])
+    @commands.group(name='VoiceRole',
+                    description="Sets a role to be added to anyone that joins a "
+                                "specified voice channel. Pass a voice channel "
+                                "`name` or `id` and a role `name` or `id`.",
+                    brief="Add a voice role",
+                    aliases=['vr'],
+                    invoke_without_command=True)
     @commands.guild_only()
     @commands.is_owner()
-    async def add_vr(self, ctx, vchannel: discord.VoiceChannel, role: discord.Role):
+    async def voice_role(self, ctx, vchannel: discord.VoiceChannel, role: discord.Role):
         gID = ctx.guild.id
         exists, vrID = await db.add_voice_role(gID, vchannel.id, role.id)
         if not exists:
@@ -128,13 +130,13 @@ class Roles(commands.Cog):
 
 
     # Command to delete a voice chat role
-    @commands.command(name='DeleteVoiceRole',
-                 description="Removes a voice role by its ID.",
-                 brief="Remove a vc role",
-                 aliases=['delvr'])
+    @voice_role.command(name='DeleteVoiceRole',
+                        description="Removes a voice role by its ID.",
+                        brief="Remove a vc role",
+                        aliases=['del'])
     @commands.guild_only()
     @commands.is_owner()
-    async def delete_vr(self, ctx, vrID):
+    async def vr_delete(self, ctx, vrID):
         exists = await db.del_voice_role(vrID)
         if exists:
             await ctx.channel.send(f"Removed reaction role entry {vrID}.")
@@ -143,22 +145,22 @@ class Roles(commands.Cog):
 
 
     # Command to list all voice chat roles
-    @commands.command(name='ListVoiceRoles',
-                 description="Lists all voice chat roles for this guild.",
-                 brief="List voice chat roles",
-                 aliases=['listvr'])
+    @voice_role.command(name='ListVoiceRoles',
+                        description="Lists all voice chat roles for this guild.",
+                        brief="List voice chat roles",
+                        aliases=['list'])
     @commands.guild_only()
     @commands.is_owner()
-    async def list_vr(self, ctx):
+    async def vr_list(self, ctx):
         roles = dict(await db.get_voice_roles(ctx.guild.id))
         await ctx.channel.send(roles)
 
 
     # Group command to add a role alert
     @commands.group(name='RoleAlert',
-               description="Sets an alert for a role",
-               brief="Sets an alert for a role",
-               aliases=['alert'])
+                    description="Sets an alert for a role",
+                    brief="Sets an alert for a role",
+                    aliases=['alert'])
     @commands.guild_only()
     @commands.is_owner()
     async def role_alert(self, ctx):

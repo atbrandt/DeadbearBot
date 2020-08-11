@@ -127,10 +127,10 @@ class Config(commands.Cog):
 
 
     # Manage starboard settings
-    @commands.command(name='Starboard',
-                 description="Sets the configuration for starred messages.",
-                 brief="Modify starboard settings.",
-                 aliases=['star'])
+    @commands.group(name='Starboard',
+                    description="Sets the configuration for starred messages.",
+                    brief="Modify starboard settings.",
+                    aliases=['star'])
     @commands.guild_only()
     @commands.is_owner()
     async def starboard(self, ctx, channel: discord.TextChannel=None):
@@ -141,6 +141,18 @@ class Config(commands.Cog):
         else:
             await db.set_cfg(ctx.guild.id, 'star_channel', None)
             await ctx.channel.send(f"Starboard disabled.")
+
+
+    # Change starboard threshold
+    @starboard.command(name='Threshold',
+                       description="Sets the configuration for starred messages.",
+                       brief="Modify starboard settings.",
+                       aliases=['threshold'])
+    @commands.guild_only()
+    @commands.is_owner()
+    async def star_threshold(self, ctx, threshold):
+        await db.set_cfg(ctx.guild.id, 'star_threshold', threshold)
+        await ctx.channel.send(f"Starboard threshold set to {threshold}")
 
 
     # Event hook for reactions being added to messages
