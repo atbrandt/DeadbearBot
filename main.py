@@ -96,8 +96,7 @@ async def add_guild(guild):
     if not botrole:
         botmember = guild.get_member(bot.user.id)
         for role in botmember.roles:
-            print(f"{role.name} - {bot.user.name}")
-            if role.managed and role.name == bot.user.name:
+            if role.managed and role.name == "DeadbearBot":
                 await db.set_cfg(guild.id, 'bot_role', role.id)
                 break
     for member in guild.members:
