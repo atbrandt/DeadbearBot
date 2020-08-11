@@ -428,12 +428,12 @@ class Embeds(commands.Cog):
                                         f"- {member['xp']} xp",
                                'inline': False})
             else:
-                fields.append({'fname': f"\#{rank + 1} - {gmember.name}",
+                fields.append({'fname': f"\#{rank + 1} - {gmember.display_name}",
                                'fdesc': f"**Level: {member['lvl']}** "
                                         f"- {member['xp']} xp",
                                'inline': False})
                 if gmember == ctx.author:
-                    desc = f"Your rank: **#{rank + 1} - {gmember.name}**"
+                    desc = f"Your rank: **#{rank + 1} - {gmember.display_name}**"
         LB = self.MenuEmbed(head, desc, fields)
         await LB.add_fields()
         message = await ctx.channel.send(embed=LB)
