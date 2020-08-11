@@ -5,7 +5,7 @@ try:
 except ImportError:
     from yaml import Loader, Dumper
 
-embedyaml = Path(__file__).parent / "cogs" / "resource" / "embeds.yaml"
+embedyaml = Path(__file__).parent / "cogs" / "resource"
 
 embeds = {'embeds': [
             {
@@ -162,7 +162,8 @@ embeds = {'embeds': [
                 'data': "dislikes"}]}]}
 
 
-if not embedyaml.is_file():
-    embedyaml.touch()
-    with open(embedyaml, 'w') as stream:
+if not embedyaml.is_dir():
+    embedyaml.mkdir()
+    Path(embedyaml / "embeds.yaml").touch()
+    with open(Path(embedyaml / "embeds.yaml"), 'w') as stream:
         dump(embeds, stream, Dumper=Dumper, sort_keys=False, indent=4)
