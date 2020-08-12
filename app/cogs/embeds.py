@@ -141,7 +141,7 @@ class Embeds(commands.Cog):
                     invoke_without_command=True)
     @commands.guild_only()
     @check_perms()
-    async def profile(self, ctx, member: discord.Member=None):
+    async def profile(self, ctx, *, member: discord.Member=None):
         if member:
             dbprof = await db.get_member(ctx.guild.id, member.id)
         else:
