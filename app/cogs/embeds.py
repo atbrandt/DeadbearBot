@@ -147,10 +147,6 @@ class Embeds(commands.Cog):
         else:
             dbprof = await db.get_member(ctx.guild.id, ctx.author.id)
             member = ctx.author
-        if dbprof['birthday']:
-            dt = datetime.strptime(dbprof['birthday'], '%Y-%m-%d')
-            now = date.today()
-            dbprof['birthday'] = now.year-dt.year-((now.month, now.day)<(dt.month, dt.day))
         strings = await self.get_strings('Profile')
         head = strings['head'].format(dbprof['lvl'])
         desc = strings['desc'].format(ctx.guild.name)
@@ -162,6 +158,14 @@ class Embeds(commands.Cog):
             else:
                 item['fdesc'] = item['fdesc'] + str(dbprof[key])
                 fields.append(item)
+        if dbprof['birthday']:
+            dt = datetime.strptime(dbprof['birthday'], '%Y-%m-%d')
+            now = date.today()
+            age = now.year-dt.year-((now.month, now.day)<(dt.month, dt.day))
+            for item in fields:
+                if item['data'] == 'birthday':
+                    item['fdesc'] = age
+                    break
         Profile = self.MenuEmbed(head, desc, fields)
         await Profile.add_fields()
         Profile.set_author(name=member.name)
