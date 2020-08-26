@@ -37,44 +37,59 @@ The current todo list includes:
 
 
 ## Command List ##
-Profile Commands
-[-prof / -profile] - Display your profile information
-[-prof e / -profile edit] - Bring up the profile management menu to change your profile display
-[-lb / -leaderboard] - Display the server leaderboard
+[-help] - Display information about available commands  
 
-Shop Commands
-[-shop] - Bring up the shop
-[-daily / -cashme / -getmoney] - Get a free boost of credits, available once every 24 hours
+Profile Commands (requires permrole)  
+[-prof / -profile] - Display your profile information  
+[-prof e / -profile edit] - Bring up the profile management menu to change your profile display  
+[-lb / -leaderboard] - Display the server leaderboard  
 
-Config Commands (owner only)
-[-prefix] - Change the [prefix] for bot commands (default: '-')
-[-stats] - Enable or disable XP tracking and level-ups for the server.
-[-say] - Have the bot send some [text] in an embed.
-[-say e] - Edit a [message_id] with a different set of [text]
+Shop Commands (requires permrole)  
+[-shop] - Bring up the shop  
+[-daily / -cashme / -getmoney] - Get a free boost of credits, available once every 24 hours  
 
-[-gj / -guildjoin] - Set a [channel_id] for greeting messages to be sent when new people join.
-[-gj msg / -guildjoin message] - Set the [text] to be sent when new people join.
-[-gl / -guildleave] - Set a [channel_id] for greeting messages to be sent when new people join.
-[-gj msg / -guildleave message] - Set the [text] to be sent when new people join.
+Basic Config Commands (owner only)  
+[-prefix] - Change the [prefix] for bot commands (default: '-')  
+[-stats] - Enable or disable XP tracking and level-ups for the server  
+[-permrole / -permissionrole] - Set the [role_id] required to be able to use non-owner commands  
 
-[-setcur / -setcurrency] - Set the [emoji] to use as the currency symbol
-[-shop avail / -shop available] - Set an [item] to have a [number] available in shop
-[-shop price] - Set [price] of [item] in the shop
+Utility Commands (owner only)  
+[-say] - Have the bot send some [text] in an embed  
+[-say e] - Edit a [message_id] with a different set of [text]  
+[-trole / -togglerole] - Give or remove a [role_id] to yourself or a [member]  
+[-roles] - Get a list of all roles on the guild  
+[-channels] - Get a list of all channels on the guild  
+[-emojis] - Get a list of all custom emojis on the guild  
 
-[-star / -starboard] - Enable saving messages by setting a [channel_id] for them to go to.
-[-star threshold / -starboard threshold] - Set [threshold] of emoji reacts before a message is starred.
+Star Board Commands (owner only)  
+[-star / -starboard] - Enable saving messages by setting a [channel_id] for them to go to  
+[-star threshold / -starboard threshold] - Set [threshold] of emoji reacts before a message is starred  
 
-[-trole / -togglerole] - Give or remove a [role_id] to yourself or a [member].
-[-arole / -autorole] - Set a [role_id] to be added to any member that joins the server.
-[-permrole / -permissionrole] - Set the [role_id] required to be able to use non-owner commands.
+Shop Config Commands (owner only)  
+[-setcur / -setcurrency] - Set the [emoji] to use as the currency symbol  
+[-shop avail / -shop available] - Set an [item] to have a [number] available in shop  
+[-shop price] - Set [price] of [item] in the shop  
 
-[-rr / -reactionrole] - Set a [channel-message] to have a react [emoji] that when clicked gives a role by its[role_id].
-[-rr del] - Deletes a reaction role by its [unique_id]
-[-rr list] - Lists all reaction roles and their id's
+Join/Leave Commands (owner only)  
+[-gj / -guildjoin] - Set a [channel_id] for greeting messages to be sent when new people join  
+[-gj msg / -guildjoin message] - Set the [text] to be sent when new people join  
+[-gl / -guildleave] - Set a [channel_id] for greeting messages to be sent when new people join  
+[-gl msg / -guildleave message] - Set the [text] to be sent when new people join  
+[-arole / -autorole] - Set a [role_id] to be added to any member that joins the server  
 
-[-vr / -voicerole] - Set a [voice channel_id] to have a [role_id] that gets automatically added/removed when that channel is joined or left.
-[-vr del] - Deletes a voice role by its [unique_id]
-[-vr list] - Lists all voice roles and their id's
+Role Alert Commands (owner only)  
+[-alert gain] - Pass a [role_id], [channel_id], and a [message] to have that message sent to that channel when a user gains that role  
+[-alert lose] - Pass a [role_id], [channel_id], and a [message] to have that message sent to that channel when a user loses that role  
+
+Reaction Role Commands (owner only)  
+[-rr / -reactionrole] - Set a [channel-message] to have a react [emoji] that when clicked gives a role by its[role_id]  
+[-rr del] - Deletes a reaction role by its [unique_id]  
+[-rr list] - Lists all reaction roles and their id's  
+
+Voice Auto-role Commands (owner only)  
+[-vr / -voicerole] - Set a [voice channel_id] to have a [role_id] that gets automatically added/removed when that channel is joined or left  
+[-vr del] - Deletes a voice role by its [unique_id]  
+[-vr list] - Lists all voice roles and their id's  
 
 
 ### If you like this project, consider tipping me on [Patreon](https://www.patreon.com/DEADBEAR)
