@@ -1,9 +1,7 @@
 # DeadbearBot
-A [Discord](https://discordapp.com/) server management bot, inspired by [NadekoBot](https://nadekobot.me/) and written in Python (version 3.5.3+) using the [discord.py module](https://github.com/Rapptz/discord.py).
-
-## What's it do?
 ![Example Image](https://puu.sh/GlPqj/136b74f98e.gif)
 
+## What's it do?
 Currently, DeadbearBot can:
 * Track and display configurable user profiles!
 * Award XP, levels, and currency to users automatically!
