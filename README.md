@@ -1,13 +1,9 @@
 # DeadbearBot
 A [Discord](https://discordapp.com/) server management bot, inspired by [NadekoBot](https://nadekobot.me/) and written in Python (version 3.5.3+) using the [discord.py module](https://github.com/Rapptz/discord.py).
 
-## How do I use it?
-1. Clone the repo
-2. Install requirements from requirements.txt
-3. Run the main.py script in a terminal
-4. Enter your bot's secret token
-
 ## What's it do?
+![Example Image](https://puu.sh/GlPqj/136b74f98e.gif)
+
 Currently, DeadbearBot can:
 * Track and display configurable user profiles!
 * Award XP, levels, and currency to users automatically!
@@ -32,6 +28,12 @@ The current todo list includes:
 * A pre-hosted version of the bot that can simply be invited to a server, no self-hosting required
 * Some kind of image manipulation system a-la the defunct NotSoBot?
 * Other fun things...
+
+## How do I use it?
+1. Clone the repo
+2. Install requirements from requirements.txt
+3. Run the main.py script in a terminal
+4. Enter your bot's secret token
 
 ## Command List ##
 [-help] - Display information about available commands  
