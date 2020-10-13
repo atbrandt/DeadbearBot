@@ -96,10 +96,11 @@ class Embeds(commands.Cog):
     @commands.is_owner()
     async def say(self, ctx, *, content: str=None):
         embed = discord.Embed(description=content)
-        if ctx.message.attachments:
-            if ctx.message.attachments[0].filename:
-                embed.set_image(url=ctx.message.attachments[0].url)
-        await ctx.channel.send(embed=embed)
+        if ctx.message.attachments[0].filename:
+            file = await ctx.message.attachments[0].to_file()
+        else:
+            file = None
+        await ctx.channel.send(file=file, embed=embed)
         await ctx.message.delete()
 
 
