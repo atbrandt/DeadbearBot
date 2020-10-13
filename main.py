@@ -59,7 +59,7 @@ async def shutdown(ctx):
 
 # Do stuff to members upon joining guild
 @bot.event
-async def on_member_join(self, member):
+async def on_member_join(member):
     dbmember = await db.get_member(guild.id, member.id)
     if not member.bot and not dbmember:
         await db.add_member(member.guild.id,
