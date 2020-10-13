@@ -10,7 +10,7 @@ from app.cogs import generic
 from app.cogs import config
 from app.cogs import embeds
 from app.cogs import roles
-from app.tests import testing
+# from app.tests import testing
 
 
 # Path to environment variables
