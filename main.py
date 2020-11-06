@@ -39,7 +39,8 @@ async def get_alias(bot, message):
 
 
 # Set up the bot, its cogs, and its command prefix alias
-bot = commands.Bot(command_prefix=get_alias)
+intents = discord.Intents.all()
+bot = commands.Bot(command_prefix=get_alias, intents=intents)
 bot.add_cog(config.Config(bot))
 bot.add_cog(generic.Generic(bot))
 bot.add_cog(embeds.Embeds(bot))
