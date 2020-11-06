@@ -78,16 +78,17 @@ async def on_guild_join(guild):
 # Make the bot ignore commands until fully initialized
 @bot.event
 async def on_connect():
+    print(f"{bot.user.name} connected, user ID is {bot.user.id}. Getting ready...")
     await bot.wait_until_ready()
 
 
 # Output info to console once bot is initialized and ready
 @bot.event
 async def on_ready():
-    print(f"{bot.user.name} is ready, user ID is {bot.user.id}")
-    print("------")
     for guild in bot.guilds:
+        print(f"Ready in {guild.name}")
         await add_guild(guild)
+    print("------Bot Ready------")
 
 
 # Add guild function
