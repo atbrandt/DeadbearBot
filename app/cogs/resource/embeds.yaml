@@ -22,7 +22,7 @@ embeds:
         inline: true
         prompt: Custom emoji purchased! Please upload the image you'd like to use
             for your new emoji.
-        limit: 10000
+        limit: 256000
         format: image
         types:
         - .jpeg
