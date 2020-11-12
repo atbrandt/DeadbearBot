@@ -205,7 +205,7 @@ class Embeds(commands.Cog):
                           PM.selected['data'])
 
 
-    # Daily cash award
+    # Command for obtaining a daily cash award
     @commands.command(name='DailyCredits',
                       aliases=['daily',
                                'credits',
@@ -253,7 +253,7 @@ class Embeds(commands.Cog):
                 f"Here's a 500 credit freebie, {member.mention}!")
 
 
-    # Shop menu function
+    # Shop menu function. This is hacky and needs a lot of refinement.
     @commands.group(name='GuildShop',
                     aliases=['shop'],
                     invoke_without_command=True)
@@ -261,6 +261,10 @@ class Embeds(commands.Cog):
     @check_perms()
     async def shop(self, ctx):
         dbprof = await db.get_member(ctx.guild.id, ctx.author.id)
+        crole_available = await db.get_cfg(ctx.guild.id, 'crole_available')
+        crole_price = await db.get_cfg(ctx.guild.id, 'crole_price')
+        cemoji_available = await db.get_cfg(ctx.guild.id, 'cemoji_available')
+        cemoji_price = await db.get_cfg(ctx.guild.id, 'cemoji_price')
         strings = await self.get_strings('Shop')
         head = strings['head'].format(ctx.guild.name)
         currency = await db.get_cfg(ctx.guild.id, 'currency')
@@ -272,6 +276,12 @@ class Embeds(commands.Cog):
         desc = strings['desc'].format(ctx.author.name, currency, dbprof['cash'])
         fields = []
         for item in strings['fields']:
+            if item['data'] == 'role':
+                item['available'] = crole_available
+                item['price'] = crole_price
+            elif item['data'] == 'emoji':
+                item['available'] = cemoji_available
+                item['price'] = cemoji_price            
             if item['available'] == 0:
                 item['fdesc'] = (f"{item['fdesc']}\n\n"
                                  f"Available: None\n"
@@ -318,11 +328,11 @@ class Embeds(commands.Cog):
                                     ctx.author.id,
                                     'cash',
                                     newbalance)
-                if Shop.selected['available'] > 0:
-                    await self.set_strings('Shop',
-                                           Shop.selected['data'],
-                                           'available',
-                                           Shop.selected['available'] - 1)
+                if Shop.selected['data'] == 'role':
+                    if Shop.selected['available'] > 0:
+                        await db.set_cfg(ctx.guild.id,
+                                         'crole_available',
+                                         Shop.selected['available'] - 1)
                 bought = True
         if bought:
             if Shop.selected['prompt2']:
@@ -342,7 +352,7 @@ class Embeds(commands.Cog):
     @shop.command(name='available')
     @commands.guild_only()
     @check_perms()
-    async def available(self, ctx, data: str, avail: int):
+    async def available(self, ctx, data: str, input: int):
         strings = await self.get_strings('Shop')
         for item in strings['fields']:
             if item['data'] == data.lower():
@@ -357,38 +367,25 @@ class Embeds(commands.Cog):
                 emojilimit = 50
             if (emojilimit - len(ctx.guild.emojis)) > 0:
                 max = emojilimit - len(ctx.guild.emojis)
-                if avail > max:
-                    await self.set_strings('Shop',
-                                           selected['data'],
-                                           'available',
-                                           max)
+                if input > max or input < 0:
+                    await db.set_cfg(ctx.guild.id, 'cemoji_available', max)
                     reply = (f"Available custom emoji in the shop set to "
                              f"{max} (maximum available for this guild).")
-                elif avail < 0:
-                    await self.set_strings('Shop',
-                                           selected['data'],
-                                           'available',
-                                           0)
-                    reply = (f"Available custom emoji in the shop set to 0 "
-                             f"(this item can't be infinite).")
                 else:
-                    await self.set_strings('Shop',
-                                           selected['data'],
-                                           'available',
-                                           avail)
+                    await db.set_cfg(ctx.guild.id, 'cemoji_available', input)
                     reply = (f"Available custom emoji in the shop set to "
-                             f"{avail}.")
+                             f"{input}.")
             else:
                 await ctx.channel.send("Max custom emoji slots reached!")
                 return
-        else:
-            await self.set_strings('Shop', selected['data'], 'available', avail)
-            if avail < 0:
+        elif selected['data'] == 'role':
+            await db.set_cfg(ctx.guild.id, 'crole_available', input)
+            if input < 0:
                 reply = (f"Set number of {selected['fname']} available in "
                          f"the shop to infinite.")
             else:
                 reply = (f"Set number of {selected['fname']} available in "
-                         f"the shop to {avail}.")
+                         f"the shop to {input}.")
         await ctx.channel.send(content=reply)
 
 
@@ -396,7 +393,7 @@ class Embeds(commands.Cog):
     @shop.command(name='price')
     @commands.guild_only()
     @check_perms()
-    async def price(self, ctx, data: str, price: int):
+    async def price(self, ctx, data: str, input: int):
         strings = await self.get_strings('Shop')
         for item in strings['fields']:
             if item['data'] == data.lower():
@@ -404,12 +401,12 @@ class Embeds(commands.Cog):
         if not selected:
             await ctx.channel.send("Shop item not found!")
             return
-        if price <= 0:
+        if input <= 0:
+            await db.set_cfg(ctx.guild.id, 'crole_price', 0)
             reply = f"Set price of {selected['fname']} to free."
-            await self.set_strings('Shop', selected['data'], 'price', 0)
         else:
-            reply = f"Set price of {selected['fname']} to {price}"
-            await self.set_strings('Shop', selected['data'], 'price', price)
+            await db.set_cfg(ctx.guild.id, 'crole_price', input)
+            reply = f"Set price of {selected['fname']} to {input}"
         await ctx.channel.send(content=reply)
 
 
@@ -467,6 +464,31 @@ class Embeds(commands.Cog):
     @commands.Cog.listener()
     async def on_guild_role_delete(self, role):
         await db.del_custom_role(role.guild.id, role.id)
+
+
+    # Adjust custom emoji available in shop when emojis are modified
+    @commands.Cog.listener()
+    async def on_guild_emojis_update(self, guild, before, after):
+        curshoplimit = await db.get_cfg(guild.id, 'cemoji_available')
+        if curshoplimit == 0:
+            return
+        elif curshoplimit < 0:
+            if 'MORE_EMOJI' in guild.features:
+                emojilimit = 200
+            else:
+                emojilimit = 50
+            if (emojilimit - len(guild.emojis)) > 0:
+                newshoplimit = emojilimit - len(guild.emojis)
+            else:
+                newshoplimit = 0
+        else:
+            if len(before) == len(after):
+                return
+            elif len(before) < len(after):
+                newshoplimit = curshoplimit - 1
+            else:
+                newshoplimit = curshoplimit + 1
+        await db.set_cfg(guild.id, 'cemoji_available', newshoplimit)
 
 
     # Looping to wait for a raw_reaction event that meets the expected criteria
@@ -650,6 +672,7 @@ class Embeds(commands.Cog):
         return convert
 
 
+    # Method for grabbing fields for embed strings.
     async def get_strings(self, name):
         with open(STRINGPATH, 'r') as stream:
             loaded = load(stream, Loader=Loader)
@@ -658,6 +681,7 @@ class Embeds(commands.Cog):
                 return item
 
 
+    # Method for modifying fields for embed strings. Not currently used.
     async def set_strings(self, name, data, key, value):
         with open(STRINGPATH, 'r') as stream:
             loaded = load(stream, Loader=Loader)

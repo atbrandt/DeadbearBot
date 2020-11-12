@@ -1,0 +1,144 @@
+embeds:
+-   name: Shop
+    head: '**{} Shop**'
+    desc: '*Buy somethin, will ya!*
+
+
+        **{}** balance: {} {}'
+    fields:
+    -   fname: Custom Role
+        fdesc: Buy a custom role! You'll be able to pick both the name and the color
+            of the role after purchase.
+        inline: true
+        prompt: Custom role purchased! Please enter a name for your new role.
+        limit: 40
+        format: text
+        prompt2: Next, select a color for your role. You may enter a name from the
+            example image below, or a hex code for a specific custom color, e.g. `0F0F0F`
+        data: role
+    -   fname: Custom Emoji
+        fdesc: Buy a custom emoji! You'll be able to pick both the image and name
+            for the emoji after purchase.
+        inline: true
+        prompt: Custom emoji purchased! Please upload the image you'd like to use
+            for your new emoji.
+        limit: 10000
+        format: image
+        types:
+        - .jpeg
+        - .jpg
+        - .gif
+        - .png
+        prompt2: Next, enter the name you want to use for the emoji, with or without
+            `::` around it.
+        data: emoji
+-   name: Profile
+    head: 'Level: **{}**'
+    desc: Member of *{}*
+    fields:
+    -   fname: Total XP
+        fdesc: "\U0001F4D6 "
+        inline: false
+        data: xp
+    -   fname: Total Credits
+        fdesc: "\U0001F48E "
+        inline: false
+        data: cash
+    -   fname: Name
+        fdesc: ''
+        inline: true
+        data: name
+    -   fname: Nickname
+        fdesc: ''
+        inline: true
+        data: nickname
+    -   fname: Age
+        fdesc: ''
+        inline: true
+        data: birthday
+    -   fname: Gender
+        fdesc: ''
+        inline: true
+        data: gender
+    -   fname: Location
+        fdesc: ''
+        inline: true
+        data: location
+    -   fname: Description
+        fdesc: ''
+        inline: false
+        data: description
+    -   fname: Likes
+        fdesc: ''
+        inline: true
+        data: likes
+    -   fname: Dislikes
+        fdesc: ''
+        inline: true
+        data: dislikes
+-   name: Manager
+    head: '**Profile Customizer**'
+    desc: Click the emoji that matches to the option you want to change, then follow
+        the instructions that appear above. Use the arrows to navigate to another
+        page, if available.
+    fields:
+    -   fname: Name
+        fdesc: Your **name**, real or otherwise.
+        inline: true
+        prompt: Submit a name, or send `clear` to reset.
+        limit: 40
+        format: text
+        data: name
+    -   fname: Nickname
+        fdesc: The **nickname** you like to be called.
+        inline: true
+        prompt: Submit a nickname, or send `clear` to reset.
+        limit: 60
+        format: text
+        data: nickname
+    -   fname: Age
+        fdesc: Your **age**, if you want it known.
+        inline: true
+        prompt: Submit a date, using the format `YYYY-MM-DD`, or send `clear` to reset.
+            Note that this date will *not* show up on your profile, it's only used
+            to calculate age!
+        limit: 10
+        format: date
+        data: birthday
+    -   fname: Gender
+        fdesc: Your **gender**, whatever it may be.
+        inline: true
+        prompt: Submit a gender, or send `clear` to reset.
+        limit: 60
+        format: text
+        data: gender
+    -   fname: Location
+        fdesc: Your **location**, if you want it known.
+        inline: true
+        prompt: Submit a location, or send `clear` to reset.
+        limit: 80
+        format: text
+        data: location
+    -   fname: Description
+        fdesc: Your **description**, for general info.
+        inline: true
+        prompt: Submit a description, or send `clear` to reset.
+        limit: 1024
+        format: text
+        data: description
+    -   fname: Likes
+        fdesc: A list of **likes**, loves, and interests.
+        inline: true
+        prompt: Submit a list of things you like, separated by commas, e.g. `one thing,
+            something, this_thing`, or send `clear` to reset.
+        limit: 1024
+        format: list
+        data: likes
+    -   fname: Dislikes
+        fdesc: A list of **dislikes**, despises, and disinterests.
+        inline: true
+        prompt: Submit a list of things you don't like, separated by commas, e.g.
+            `one thing, something, this_thing`, or send `clear` to reset.
+        limit: 1024
+        format: list
+        data: dislikes
