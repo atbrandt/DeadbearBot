@@ -51,7 +51,7 @@ The current todo list includes:
 [-permrole / -permissionrole] - Set the [role_id] required to be able to use non-owner commands  
 [-shop available role] - Set the number of custom roles available for purchase in the shop  
 [-shop price role] - Set the price of custom roles  
-[-shop available eomji] - Set the number of custom emoji slots available for purchase in the shop  
+[-shop available emoji] - Set the number of custom emoji slots available for purchase in the shop  
 [-shop price emoji] - Set the price of custom emoji slots  
 
 ### Utility Commands (owner only)
