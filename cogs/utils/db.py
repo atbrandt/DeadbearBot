@@ -3,7 +3,7 @@ from uuid import uuid4
 from pathlib import Path
 
 
-DBPATH = Path(__file__).parent / "bot.db"
+DBPATH = Path(__file__).parent.parent / "bot.db"
 
 
 # Function for creating a connection to db
@@ -39,8 +39,8 @@ async def get_all_guilds():
     fetched = await c.fetchall()
     await conn.close()
     guilds = []
-    for i in fetched:
-        guilds.append(fetched['id'])
+    for item in fetched:
+        guilds.append(item['id'])
     return guilds
 
 

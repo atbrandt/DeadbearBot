@@ -1,7 +1,8 @@
 from typing import Union, Optional
 import discord
 from discord.ext import commands
-from app import db
+from .utils import db
+from .utils import checks
 
 
 class Roles(commands.Cog):
@@ -177,7 +178,6 @@ class Roles(commands.Cog):
                          role: discord.Role,
                          channel: discord.TextChannel,
                          *, message: str):
-        gID = ctx.guild.id
         arID = await db.add_role_alert(ctx.guild.id,
                                        role.id,
                                        'gain_role',

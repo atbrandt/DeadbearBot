@@ -3,7 +3,7 @@ from pathlib import Path
 
 
 # Set platform-independent path to db file and migrations folder
-DBPATH = Path(__file__).parent / "bot.db"
+DBPATH = Path(__file__).parent.parent / "bot.db"
 MIGPATH = Path(__file__).parent / "migration"
 
 

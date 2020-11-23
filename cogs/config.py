@@ -3,7 +3,8 @@ import random
 from typing import Union, Optional
 import discord
 from discord.ext import commands
-from app import db
+from .utils import db
+from .utils import checks
 
 
 class Config(commands.Cog):

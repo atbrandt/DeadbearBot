@@ -3,14 +3,13 @@ from pathlib import Path
 from dotenv import load_dotenv
 import discord
 from discord.ext import commands
-from app import db
-from app import migration
-from app import resource
-from app.cogs import generic
-from app.cogs import config
-from app.cogs import embeds
-from app.cogs import roles
-# from app.tests import testing
+from cogs.utils import db
+from cogs.utils import migration
+from cogs.utils import generic
+from cogs import config
+from cogs import embeds
+from cogs import roles
+# from cogs import testing
 
 
 # Path to environment variables
@@ -111,10 +110,10 @@ async def add_guild(guild):
 
 
 # Run the program
-def main():
-    migration.migrate()
-    bot.run(token)
-
-
 if __name__ == '__main__':
-    main()
+    migration.migrate()
+    try:
+        bot.run(token)
+    except discord.PrivilegedIntentsRequired:
+        print("Privileged Intents are required to use this bot. "
+            "Enable them through the Discord Developer Portal.")

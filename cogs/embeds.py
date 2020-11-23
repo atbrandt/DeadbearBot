@@ -1,5 +1,10 @@
 import math
+import sys
 import asyncio
+
+if sys.version_info[0] == 3 and sys.version_info[1] >= 8 and sys.platform.startswith('win'):
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
 from datetime import datetime, date, timedelta
 from pathlib import Path
 from yaml import load, dump
@@ -9,7 +14,8 @@ except ImportError:
     from yaml import Loader, Dumper
 import discord
 from discord.ext import commands
-from app import db
+from .utils import db
+from .utils import checks
 
 
 # Path to images directory
@@ -24,7 +30,7 @@ class Embeds(commands.Cog):
 
     # Class definition for embedded menus
     class MenuEmbed(discord.Embed):
-        def __init__(self, head, desc, fields, numbers=False):
+        def __init__(self, user, head, desc, fields, numbers=False):
             self.numbtns = [f"1\N{combining enclosing keycap}",
                             f"2\N{combining enclosing keycap}",
                             f"3\N{combining enclosing keycap}",
@@ -44,6 +50,8 @@ class Embeds(commands.Cog):
             self.page = 0
             self.pfields = self.pages[self.page]
             self.selected = None
+            self.user = user
+            self.validemoji = None
             super().__init__(title=head, description=desc)
             super().set_footer(text=f"Page {self.page + 1}/{len(self.pages)}")
 
@@ -54,7 +62,7 @@ class Embeds(commands.Cog):
                     super().add_field(name=f"{i+1}. {item['fname']}",
                                       value=item['fdesc'],
                                       inline=item['inline'])
-                self.options = self.numbtns[:len(self.pfields)]
+                self.validemoji = self.numbtns[:len(self.pfields)]
             else:
                 for item in self.pfields:
                     super().add_field(name=f"{item['fname']}",
@@ -63,27 +71,35 @@ class Embeds(commands.Cog):
 
 
         async def add_control(self, message):
+            self.message = message
             content = "**Updating reactji buttons, please wait...**"
-            await message.edit(content=content)
-            await message.add_reaction(self.closebtn)
+            await self.message.edit(content=content)
+            await self.message.add_reaction(self.closebtn)
             if len(self.pages) > 1:
                 self.nav = True
                 for item in self.navbtns:
-                    await message.add_reaction(item)
+                    await self.message.add_reaction(item)
             if self.numbers:
                 for index, item in enumerate(self.pfields):
-                    await message.add_reaction(self.numbtns[index])
-            await message.edit(content=None)
+                    await self.message.add_reaction(self.numbtns[index])
+            await self.message.edit(content=None)
 
 
-    # Checking perms before executing command
-    def check_perms():
-        async def predicate(ctx):
-            permrole = await db.get_cfg(ctx.guild.id, 'perm_role')
-            gotRole = ctx.guild.get_role(permrole)
-            roles = ctx.author.roles
-            return gotRole in roles
-        return commands.check(predicate)
+        async def process_reaction(self, emoji):
+            if self.numbers:
+                if emoji in self.validemoji:
+                    index = self.validemoji.index(emoji)
+                    self.selected = self.pfields[index]
+            elif self.nav and (emoji in self.navbtns):
+                if emoji == self.navbtns[0] and self.page != 0:
+                    self.page -= 1
+                elif self.page != len(self.pages)-1:
+                    self.page += 1
+                self.pfields = self.pages[self.page]
+                self.clear_fields()
+                await self.add_fields()
+                self.set_footer(text=f"Page {self.page + 1}/{len(self.pages)}")
+                await self.message.edit(embed=self)
 
 
     # Make the bot say things in a nice embedded way
@@ -141,7 +157,7 @@ class Embeds(commands.Cog):
                     aliases=['prof', 'profile'],
                     invoke_without_command=True)
     @commands.guild_only()
-    @check_perms()
+    @checks.check_perms()
     async def profile(self, ctx, *, member: discord.Member=None):
         if member:
             dbprof = await db.get_member(ctx.guild.id, member.id)
@@ -167,14 +183,14 @@ class Embeds(commands.Cog):
                 if item['data'] == 'birthday':
                     item['fdesc'] = age
                     break
-        Profile = self.MenuEmbed(head, desc, fields)
+        Profile = self.MenuEmbed(ctx.author, head, desc, fields)
         await Profile.add_fields()
         Profile.set_author(name=member.name)
         avatar = member.avatar_url_as(format='png')
         Profile.set_thumbnail(url=avatar)
         message = await ctx.channel.send(embed=Profile)
         await Profile.add_control(message)
-        await self.wait_for_select(ctx.author, message, Profile, 55.0)
+        await self.wait_for_select(Profile, 55.0)
 
 
     # Command to fill out profile info via DM
@@ -183,17 +199,17 @@ class Embeds(commands.Cog):
                      brief="Edit profile information.",
                      aliases=['e', 'edit'])
     @commands.guild_only()
-    @check_perms()
+    @checks.check_perms()
     async def profile_manager(self, ctx):
         strings = await self.get_strings('Manager')
         head = strings['head']
         desc = strings['desc']
         fields = strings['fields']
-        PM = self.MenuEmbed(head, desc, fields, True)
+        PM = self.MenuEmbed(ctx.author, head, desc, fields, True)
         await PM.add_fields()
         message = await ctx.channel.send(embed=PM)
         await PM.add_control(message)
-        await self.wait_for_select(ctx.author, message, PM, 55.0)
+        await self.wait_for_select(PM, 55.0)
         edit = "**Instructions being sent via DM, check your messages.**"
         await message.edit(content=edit, delete_after=5.0)
         reply = (f"{PM.selected['prompt']}\n\n"
@@ -213,7 +229,7 @@ class Embeds(commands.Cog):
                                'dailycredits',
                                'getmoney'])
     @commands.guild_only()
-    @check_perms()
+    @checks.check_perms()
     async def daily_cash(self, ctx):
         gID = ctx.guild.id
         member = ctx.author
@@ -258,7 +274,7 @@ class Embeds(commands.Cog):
                     aliases=['shop'],
                     invoke_without_command=True)
     @commands.guild_only()
-    @check_perms()
+    @checks.check_perms()
     async def shop(self, ctx):
         dbprof = await db.get_member(ctx.guild.id, ctx.author.id)
         crole_available = await db.get_cfg(ctx.guild.id, 'crole_available')
@@ -306,13 +322,13 @@ class Embeds(commands.Cog):
                                   f"Max size: {int(item['limit']/1000)}kb\n"
                                   f"File types accepted: {item['types']}")
             fields.append(item)
-        Shop = self.MenuEmbed(head, desc, fields, True)
+        Shop = self.MenuEmbed(ctx.author, head, desc, fields, True)
         await Shop.add_fields()
         message = await ctx.channel.send(embed=Shop)
         await Shop.add_control(message)
         bought = False
         while not bought:
-            await self.wait_for_select(ctx.author, message, Shop, 55.0)
+            await self.wait_for_select(Shop, 55.0)
             if not Shop.selected:
                 break
             elif Shop.selected['available'] == 0:
@@ -351,7 +367,7 @@ class Embeds(commands.Cog):
     # Command to set item availability in the shop
     @shop.command(name='available')
     @commands.guild_only()
-    @check_perms()
+    @checks.check_perms()
     async def available(self, ctx, data: str, input: int):
         strings = await self.get_strings('Shop')
         for item in strings['fields']:
@@ -392,7 +408,7 @@ class Embeds(commands.Cog):
     # Command to set item price in the shop
     @shop.command(name='price')
     @commands.guild_only()
-    @check_perms()
+    @checks.check_perms()
     async def price(self, ctx, data: str, input: int):
         strings = await self.get_strings('Shop')
         for item in strings['fields']:
@@ -415,7 +431,7 @@ class Embeds(commands.Cog):
                  description="Display the guild leaderboard",
                  aliases=['lb'])
     @commands.guild_only()
-    @check_perms()
+    @checks.check_perms()
     async def leaderboard(self, ctx):
         head = f"Leaderboard for **{ctx.guild.name}**"
         members = await db.get_all_members(ctx.guild.id)
@@ -424,23 +440,23 @@ class Embeds(commands.Cog):
         for rank, member in enumerate(members):
             gmember = ctx.guild.get_member(member['member_id'])
             if not gmember:
-                fields.append({'fname': f"\#{rank + 1} - "
+                fields.append({'fname': f"#{rank + 1} - "
                                         f"{member['member_id']} (Not Found)",
                                'fdesc': f"**Level: {member['lvl']}** "
                                         f"- {member['xp']} xp",
                                'inline': False})
             else:
-                fields.append({'fname': f"\#{rank + 1} - {gmember.display_name}",
+                fields.append({'fname': f"#{rank + 1} - {gmember.display_name}",
                                'fdesc': f"**Level: {member['lvl']}** "
                                         f"- {member['xp']} xp",
                                'inline': False})
                 if gmember == ctx.author:
                     desc = f"Your rank: **#{rank + 1} - {gmember.display_name}**"
-        LB = self.MenuEmbed(head, desc, fields)
+        LB = self.MenuEmbed(ctx.author, head, desc, fields)
         await LB.add_fields()
         message = await ctx.channel.send(embed=LB)
         await LB.add_control(message)
-        await self.wait_for_select(ctx.author, message, LB, 55.0)
+        await self.wait_for_select(LB, 55.0)
 
 
     # Do stuff when a message is sent
@@ -492,45 +508,26 @@ class Embeds(commands.Cog):
 
 
     # Looping to wait for a raw_reaction event that meets the expected criteria
-    async def wait_for_select(self, user, message, Menu, time=None):
+    async def wait_for_select(self, Menu, time=None):
         def check(payload):
-            return (payload.user_id == user.id and
-                    payload.message_id == message.id)
+            return (payload.user_id == Menu.user.id and
+                    payload.message_id == Menu.message.id)
 
-
-        select = None
-        while not select:
+        while not Menu.selected:
             try:
                 payload = await self.bot.wait_for('raw_reaction_add',
-                                                  timeout=time,
-                                                  check=check)
-                await message.remove_reaction(payload.emoji, user)
+                                                timeout=time,
+                                                check=check)
+                await Menu.message.remove_reaction(payload.emoji, Menu.user)
                 if payload.emoji.name == Menu.closebtn:
                     raise asyncio.TimeoutError()
             except asyncio.TimeoutError:
-                await message.clear_reactions()
-                await message.edit(content="Menu closing in 5 seconds...",
-                                   delete_after=5.0)
+                await Menu.message.clear_reactions()
+                await Menu.message.edit(content="Menu closing in 5 seconds...",
+                                delete_after=5.0)
                 break
             else:
-                if Menu.numbers and payload.emoji.name in Menu.options:
-                    index = Menu.options.index(payload.emoji.name)
-                    select = Menu.pfields[index]
-                elif Menu.nav:
-                    if (payload.emoji.name == Menu.navbtns[0] and
-                        Menu.page != 0):
-                        Menu.page -= 1
-                    elif (payload.emoji.name == Menu.navbtns[1] and
-                          Menu.page != len(Menu.pages)-1):
-                        Menu.page += 1
-                    else:
-                        continue
-                    Menu.pfields = Menu.pages[Menu.page]
-                    Menu.clear_fields()
-                    await Menu.add_fields()
-                    Menu.set_footer(text=f"Page {Menu.page + 1}/{len(Menu.pages)}")
-                    await message.edit(embed=Menu)
-        Menu.selected = select
+                await Menu.process_reaction(payload.emoji.name)
 
 
     # Method for processing profile changes
