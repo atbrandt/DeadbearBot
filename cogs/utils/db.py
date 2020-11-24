@@ -3,7 +3,10 @@ from uuid import uuid4
 from pathlib import Path
 
 
-DBPATH = Path(__file__).parent.parent / "bot.db"
+for path in Path(__file__).parents[2].rglob('bot.db'):
+    DBPATH = path
+if not DBPATH:
+    DBPATH = Path(__file__).parents[1] / 'bot.db'
 
 
 # Function for creating a connection to db
