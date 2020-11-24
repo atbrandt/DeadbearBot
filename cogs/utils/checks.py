@@ -11,6 +11,8 @@ def check_perms():
 
 
 async def check_perm_role(ctx):
+    if ctx.author.id == ctx.bot.owner_id:
+        return True
     permrole = await db.get_cfg(ctx.guild.id, 'perm_role')
     gotRole = ctx.guild.get_role(permrole)
     roles = ctx.author.roles
