@@ -92,7 +92,7 @@ async def filter_member(member):
     if member.bot:
         if dbmember:
             await db.del_member(member.guild.id, member.id)
-    else if not dbmember:
+    elif not dbmember:
         await db.add_member(member.guild.id, member.id, member.created_at, member.joined_at)
 
 
