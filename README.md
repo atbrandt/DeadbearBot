@@ -20,10 +20,13 @@ The current to-do list can be found in Issues under the "Enhancement" tag. In ad
 * A pre-hosted version of the bot that can simply be invited to a server, no self-hosting required
 
 ## How do I use it?
-1. Clone the repo
-2. Install requirements from requirements.txt
-3. Run the main.py script in a terminal
-4. Enter your bot's secret token
+1. Create a bot application through the ![Discord Developer Portal](https://discord.com/developers/applications/)
+2. Under the "Bot" tab, toggle on the "Presence" and "Server Members" intents
+3. Invite your bot to your server with administrator privileges
+4. Clone this repository, or download and extract the files manually
+5. Install Python (v3.8.6 is recommended) and the requirements from requirements.txt
+6. In a terminal, navigate to the directory where you saved the repo and run `python main.py`
+7. When prompted, enter your bot's secret token (found in the "Bot" tab of the Developer Portal, under "Token")
 
 ## Command List ##
 [-help] - Display information about available commands  
