@@ -31,58 +31,59 @@ The current to-do list can be found in Issues under the "Enhancement" tag. In ad
 ## Command List ##
 [-help] - Display information about available commands  
 
-### Profile Commands (requires permrole)
+### Profile Commands
 [-prof / -profile] - Display your profile information  
-[-prof e / -profile edit] - Bring up the profile management menu to change your profile display  
+[-prof e / edit] - Bring up the profile management menu to change your profile display  
 [-lb / -leaderboard] - Display the server leaderboard  
 
-### Shop Commands (requires permrole)
+### Shop Commands
 [-shop] - Bring up the shop  
 [-daily / -cashme / -getmoney] - Get a free boost of credits, available once every 24 hours  
 
 ### Basic Config Commands (owner only)
 [-prefix] - Change the [prefix] for bot commands (default: '-')  
 [-stats] - Enable or disable XP tracking and level-ups for the server  
-[-permrole / -permissionrole] - Set the [role_id] required to be able to use non-owner commands  
+[-permrole / -permissionrole] - Set a [role_id] that's required to be able to use non-owner commands  
 
 ### Utility Commands (owner only)
-[-say] - Have the bot send some [text] in an embed  
-[-say e] - Edit a [message_id] with a different set of [text]  
-[-trole / -togglerole] - Give or remove a [role_id] to yourself or a [member]  
+[-say / -botsay] - Have the bot send some [text] in an embed  
+[-say e / edit] - Edit a [message_id] with a different set of [text]  
+[-tr / -togglerole] - Give or remove a [role_id] to yourself or a [member]  
 [-roles] - Get a list of all roles on the guild  
 [-channels] - Get a list of all channels on the guild  
 [-emojis] - Get a list of all custom emojis on the guild  
 
 ### Star Board Commands (owner only)
 [-star / -starboard] - Enable saving messages by setting a [channel_id] for them to go to  
-[-star threshold / -starboard threshold] - Set [threshold] of emoji reacts before a message is starred  
+[-star t / threshold] - Set [threshold] of emoji reacts before a message is starred  
 
 ### Shop Config Commands (owner only)
-[-setcur / -setcurrency] - Set the [emoji] to use as the currency symbol  
-[-shop available role] - Set the number of custom roles available for purchase in the shop  
-[-shop price role] - Set the price of custom roles  
-[-shop available emoji] - Set the number of custom emoji slots available for purchase in the shop  
-[-shop price emoji] - Set the price of custom emoji slots  
+[-csymbol / -currencysymbol] - Set the [emoji] to use as the currency symbol  
+[-shop a role / available role] - Set the number of custom roles available for purchase in the shop  
+[-shop p role / price role] - Set the price of custom roles  
+[-shop a emoji / available emoji] - Set the number of custom emoji slots available for purchase in the shop  
+[-shop p emoji / price emoji] - Set the price of custom emoji slots  
 
 ### Join/Leave Commands (owner only)
 [-gj / -guildjoin] - Set a [channel_id] for greeting messages to be sent when new people join  
-[-gj msg / -guildjoin message] - Set the [text] to be sent when new people join  
+[-gj msg / message] - Set the [text] to be sent when new people join  
 [-gl / -guildleave] - Set a [channel_id] for greeting messages to be sent when new people join  
-[-gl msg / -guildleave message] - Set the [text] to be sent when new people join  
-[-arole / -autorole] - Set a [role_id] to be added to any member that joins the server  
+[-gl msg / message] - Set the [text] to be sent when new people join  
+[-ar / -autorole] - Set a [role_id] to be added to any member that joins the server  
 
 ### Role Alert Commands (owner only)
-[-alert gain] - Pass a [role_id], [channel_id], and a [message] to have that message sent to that channel when a user gains that role  
-[-alert lose] - Pass a [role_id], [channel_id], and a [message] to have that message sent to that channel when a user loses that role  
+[-ra / -rolealert] - Empty command, requires a subcommand.
+[-ra g / gain] - Pass a [role_id], [channel_id], and a [message] to have that message sent to that channel when a user gains that role  
+[-ra l / lose] - Pass a [role_id], [channel_id], and a [message] to have that message sent to that channel when a user loses that role  
 
 ### Reaction Role Commands (owner only)
 [-rr / -reactionrole] - Set a [channel-message] to have a react [emoji] that when clicked gives a role by its [role_id]  
-[-rr del] - Deletes a reaction role by its [unique_id]  
-[-rr list] - Lists all reaction roles and their id's  
+[-rr d / delete] - Deletes a reaction role by its [unique_id]  
+[-rr l / list] - Lists all reaction roles and their id's  
 
 ### Voice Auto-role Commands (owner only)
 [-vr / -voicerole] - Set a [voice channel_id] to have a [role_id] that gets automatically added/removed when that channel is joined or left  
-[-vr del] - Deletes a voice role by its [unique_id]  
-[-vr list] - Lists all voice roles and their id's  
+[-vr d / delete] - Deletes a voice role by its [unique_id]  
+[-vr l / list] - Lists all voice roles and their id's  
 
 ### If you like this project, consider tipping me on [Patreon](https://www.patreon.com/DEADBEAR)
