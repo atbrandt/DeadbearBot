@@ -15,17 +15,9 @@ Currently, DeadbearBot can:
 * Take a message and put it in an nicely-formatted embed!
 
 ## What's planned for the future?
-The current todo list includes:
-* Allow users to create their own custom messages to be repeated by the bot on command
-* Add birthday alerts for users that want the bot to wish them a happy birthday
-* Add configurable logging functionality
-* Add mute/kick/ban functions to the bot
-* A configurable permission system that allows enabling/disabling commands for users, roles, or channels
-* More configuration options for the shop, like a raffling system that allows buying tickets to receive user-submitted rewards
+The current to-do list can be found in Issues under the "Enhancement" tag. In addition to these, I'd also like to eventually add:
 * A deployment system that allows the bot to be easily set up with no fuss (docker maybe?)
 * A pre-hosted version of the bot that can simply be invited to a server, no self-hosting required
-* Some kind of image manipulation system a-la the defunct NotSoBot?
-* Other fun things...
 
 ## How do I use it?
 1. Clone the repo
