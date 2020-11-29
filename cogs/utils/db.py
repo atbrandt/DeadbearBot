@@ -116,6 +116,19 @@ async def add_member(guildID, memberID, created, joined):
     await conn.close()
 
 
+# Removes a member from the members table
+async def del_member(guildID, memberID):
+    conn = await db_connect()
+    c = await conn.cursor()
+    sql = """
+    DELETE FROM members
+    WHERE guild_id = ?
+    AND member_id = ?;"""
+    await c.execute(sql, (guildID, memberID,))
+    await conn.commit()
+    await conn.close()
+
+
 # Returns all members of a given guild
 async def get_all_members(guildID):
     conn = await db_connect()
