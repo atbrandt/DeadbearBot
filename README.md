@@ -85,9 +85,4 @@ The current to-do list can be found in Issues under the "Enhancement" tag. In ad
 [-vr del] - Deletes a voice role by its [unique_id]  
 [-vr list] - Lists all voice roles and their id's  
 
-
-## Why are you rewriting bot functionality that already exists?
-[Wikipedia: Reinventing the wheel](https://en.wikipedia.org/wiki/Reinventing_the_wheel)
-
-
 ### If you like this project, consider tipping me on [Patreon](https://www.patreon.com/DEADBEAR)
