@@ -444,22 +444,24 @@ class Embeds(commands.Cog):
         members = await db.get_all_members(ctx.guild.id)
         members.sort(key=lambda member : member['xp'], reverse=True)
         fields = []
-        for rank, member in enumerate(members):
+        rank = 1
+        for member in members:
             gmember = ctx.guild.get_member(member['member_id'])
             if not gmember:
                 continue
-                # fields.append({'fname': f"#{rank + 1} - "
+                # fields.append({'fname': f"#{rank} - "
                 #                        f"{member['member_id']} (Not Found)",
                 #               'fdesc': f"**Level: {member['lvl']}** "
                 #                        f"- {member['xp']} xp",
                 #               'inline': False})
             else:
-                fields.append({'fname': f"#{rank + 1} - {gmember.display_name}",
+                fields.append({'fname': f"#{rank} - {gmember.display_name}",
                                'fdesc': f"**Level: {member['lvl']}** "
                                         f"- {member['xp']} xp",
                                'inline': False})
                 if gmember == ctx.author:
-                    desc = f"Your rank: **#{rank + 1} - {gmember.display_name}**"
+                    desc = f"Your rank: **#{rank} - {gmember.display_name}**"
+                rank += 1
         LB = self.MenuEmbed(ctx.author, head, desc, fields)
         await LB.add_fields()
         message = await ctx.channel.send(embed=LB)
