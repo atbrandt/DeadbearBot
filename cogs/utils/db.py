@@ -3,6 +3,7 @@ from uuid import uuid4
 from pathlib import Path
 
 
+DBPATH = ""
 for path in Path(__file__).parents[2].rglob('bot.db'):
     DBPATH = path
 if not DBPATH:
