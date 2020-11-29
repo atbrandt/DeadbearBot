@@ -47,10 +47,11 @@ bot.add_cog(roles.Roles(bot))
 
 
 # Command to gracefully shut down the bot
-@bot.command(name='Shutdown',
-             description="Shut down the bot and close all connections.",
-             brief="Shut down the bot.",
-             aliases=['die'])
+@bot.command(
+    name='Shutdown',
+    description="Shut down the bot and close all connections.",
+    brief="Shut down the bot.",
+    aliases=['shutdown', 'die'])
 @commands.is_owner()
 async def shutdown(ctx):
     await ctx.channel.send("Shutting down...")
@@ -60,12 +61,7 @@ async def shutdown(ctx):
 # Do stuff to members upon joining guild
 @bot.event
 async def on_member_join(member):
-    dbmember = await db.get_member(member.guild.id, member.id)
-    if not member.bot and not dbmember:
-        await db.add_member(member.guild.id,
-                            member.id,
-                            member.created_at,
-                            member.joined_at)
+    await filter_member(member)
 
 
 # Add guild when joining new guild
@@ -90,6 +86,16 @@ async def on_ready():
     print("------Bot Ready------")
 
 
+# Filter out bots from the database and add new members
+async def filter_member(member):
+    dbmember = await db.get_member(member.guild.id, member.id)
+    if member.bot:
+        if dbmember:
+            await db.del_member(member.guild.id, member.id)
+    else if not dbmember:
+        await db.add_member(member.guild.id, member.id, member.created_at, member.joined_at)
+
+
 # Add guild function
 async def add_guild(guild):
     await db.add_guild(guild.id)
@@ -101,12 +107,7 @@ async def add_guild(guild):
                 await db.set_cfg(guild.id, 'bot_role', role.id)
                 break
     for member in guild.members:
-        dbmember = await db.get_member(guild.id, member.id)
-        if not member.bot and not dbmember:
-            await db.add_member(guild.id,
-                                member.id,
-                                member.created_at,
-                                member.joined_at)
+        await filter_member(member)
 
 
 # Run the program
