@@ -8,17 +8,19 @@ class Generic(commands.Cog):
 
 
     # Testing command
-    @commands.command(name='test')
+    @commands.command(
+        name='test')
     async def hello_world(self, ctx):
         print(f"Message sent in {ctx.channel} from {ctx.author.id}")
         await ctx.channel.send(f"Hello {ctx.author}!")
 
 
     # Get list of roles (with IDs) on guild
-    @commands.command(name='GetRoleIDs',
-                 description="Returns list of roles on server with IDs.",
-                 brief="Get all roles with IDs",
-                 aliases=['roles'])
+    @commands.command(
+        name='GetRoleIDs',
+        description="Returns list of roles on server with IDs.",
+        brief="Get all roles with IDs",
+        aliases=['roles'])
     @commands.guild_only()
     @commands.is_owner()
     async def get_roles(self, ctx):
@@ -29,10 +31,11 @@ class Generic(commands.Cog):
 
 
     # Get list of emojis (with IDs) on guild
-    @commands.command(name='GetEmojiIDs',
-                 description="Returns list of emojis on server with IDs.",
-                 brief="Get all emojis with IDs",
-                 aliases=['emojis'])
+    @commands.command(
+        name='GetEmojiIDs',
+        description="Returns list of emojis on server with IDs.",
+        brief="Get all emojis with IDs",
+        aliases=['emojis'])
     @commands.guild_only()
     @commands.is_owner()
     async def get_emojis(self, ctx):
@@ -43,10 +46,11 @@ class Generic(commands.Cog):
 
 
     # Get list of channels (with IDs) on guild
-    @commands.command(name='GetChannelIDs',
-                 description="Returns list of channels on server with IDs.",
-                 brief="Get all channels with IDs",
-                 aliases=['channels'])
+    @commands.command(
+        name='GetChannelIDs',
+        description="Returns list of channels on server with IDs.",
+        brief="Get all channels with IDs",
+        aliases=['channels'])
     @commands.guild_only()
     @commands.is_owner()
     async def get_channels(self, ctx):

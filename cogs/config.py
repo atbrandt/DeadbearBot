@@ -13,10 +13,11 @@ class Config(commands.Cog):
 
 
     # Set an alias for the bot prefix
-    @commands.command(name='PrefixAlias',
-                      description="Sets an alias for the default command prefix.",
-                      brief="Set command prefix alias.",
-                      aliases=['prefix'])
+    @commands.command(
+        name='PrefixAlias',
+        description="Sets an alias for the default command prefix.",
+        brief="Set command prefix alias.",
+        aliases=['prefixalias', 'prefix', 'pre'])
     @commands.guild_only()
     @commands.is_owner()
     async def change_prefix(self, ctx, prefix):
@@ -25,10 +26,11 @@ class Config(commands.Cog):
 
 
     # Set perm roles for public commands
-    @commands.command(name='PermissionRoles',
-                      description="Sets roles that can use basic commands.",
-                      brief="Set permrole.",
-                      aliases=['permrole'])
+    @commands.command(
+        name='PermissionRole',
+        description="Sets role that can use basic commands.",
+        brief="Set permrole.",
+        aliases=['permissionrole', 'permrole', 'pr'])
     @commands.guild_only()
     @commands.is_owner()
     async def set_perms(self, ctx, role: discord.Role):
@@ -37,15 +39,16 @@ class Config(commands.Cog):
 
 
     # Set the channel for join messages
-    @commands.group(name='GuildJoin',
-               description="Enables or disables the automatic join message in a "
-                           "specified channel. Pass no channel to disable.",
-               brief="Turn join messages on or off.",
-               aliases=['gj'],
-               invoke_without_command=True)
+    @commands.group(
+        name='GuildJoin',
+        description="Enables or disables the automatic join message in a "
+                    "specified channel. Pass no channel to disable.",
+        brief="Turn join messages on or off.",
+        aliases=['guildjoin', 'gjoin', 'gj'],
+        invoke_without_command=True)
     @commands.guild_only()
     @commands.is_owner()
-    async def gjoin(self, ctx, channel: discord.TextChannel=None):
+    async def guild_join(self, ctx, channel: discord.TextChannel=None):
         if channel:
             await db.set_cfg(ctx.guild.id, 'join_channel', channel.id)
             await ctx.channel.send(f"Greeting enabled for \"{channel.name}\".")
@@ -55,10 +58,11 @@ class Config(commands.Cog):
 
 
     # Set the join message
-    @gjoin.command(name='JoinMessage',
-                   description="Sets the automatic greeting message.",
-                   brief="Modify join message.",
-                   aliases=['msg'])
+    @guild_join.command(
+        name='Message',
+        description="Sets the automatic greeting message.",
+        brief="Modify join message.",
+        aliases=['message', 'msg'])
     @commands.guild_only()
     @commands.is_owner()
     async def gjoin_message(self, ctx, *, message: str):
@@ -67,15 +71,16 @@ class Config(commands.Cog):
 
 
     # Set the channel for leave messages
-    @commands.group(name='GuildLeave',
-               description="Enables or disables the automatic leave message in a "
-                           "specified channel. Pass no channel to disable.",
-               brief="Turn leave message on or off.",
-               aliases=['gl'],
-               invoke_without_command=True)
+    @commands.group(
+        name='GuildLeave',
+        description="Enables or disables the automatic leave message in a "
+                    "specified channel. Pass no channel to disable.",
+        brief="Turn leave message on or off.",
+        aliases=['guildleave', 'gleave', 'gl'],
+        invoke_without_command=True)
     @commands.guild_only()
     @commands.is_owner()
-    async def gleave(self, ctx, channel: discord.TextChannel=None):
+    async def guild_leave(self, ctx, channel: discord.TextChannel=None):
         if channel:
             await db.set_cfg(ctx.guild.id, 'leave_channel', channel.id)
             await ctx.channel.send(f"Farewells enabled for \"{channel.name}\".")
@@ -85,10 +90,11 @@ class Config(commands.Cog):
 
 
     # Set the leave message
-    @gleave.command(name='LeaveMessage',
-                    description="Sets the automatic leave message.",
-                    brief="Modify leave message.",
-                    aliases=['msg'])
+    @guild_leave.command(
+        name='Message',
+        description="Sets the automatic leave message.",
+        brief="Modify leave message.",
+        aliases=['message', 'msg'])
     @commands.guild_only()
     @commands.is_owner()
     async def gleave_message(self, ctx, *, message: str):
@@ -97,9 +103,10 @@ class Config(commands.Cog):
 
 
     # Set the currency symbol
-    @commands.command(name='Set Currency Symbol',
-                      description="Sets the server currency symbol.",
-                      aliases=['setcur'])
+    @commands.command(
+        name='CurrencySymbol',
+        description="Sets the server currency symbol.",
+        aliases=['currencysymbol', 'csymbol'])
     @commands.guild_only()
     @commands.is_owner()
     async def set_currency(self, ctx, emoji: Union[discord.Emoji, str]):
@@ -111,9 +118,10 @@ class Config(commands.Cog):
 
 
     # Toggle guild stat tracking
-    @commands.command(name='Stats',
-                      description="Toggles guild stats.",
-                      aliases=['stats'])
+    @commands.command(
+        name='Stats',
+        description="Toggles guild stats.",
+        aliases=['stats'])
     @commands.guild_only()
     @commands.is_owner()
     async def stats(self, ctx):
@@ -128,10 +136,11 @@ class Config(commands.Cog):
 
 
     # Manage starboard settings
-    @commands.group(name='Starboard',
-                    description="Sets the configuration for starred messages.",
-                    brief="Modify starboard settings.",
-                    aliases=['star'])
+    @commands.group(
+        name='Starboard',
+        description="Sets the configuration for starred messages.",
+        brief="Modify starboard settings.",
+        aliases=['starboard', 'star'])
     @commands.guild_only()
     @commands.is_owner()
     async def starboard(self, ctx, channel: discord.TextChannel=None):
@@ -145,10 +154,11 @@ class Config(commands.Cog):
 
 
     # Change starboard threshold
-    @starboard.command(name='Threshold',
-                       description="Sets the configuration for starred messages.",
-                       brief="Modify starboard settings.",
-                       aliases=['threshold'])
+    @starboard.command(
+        name='Threshold',
+        description="Sets the configuration for starred messages.",
+        brief="Modify starboard settings.",
+        aliases=['threshold', 't'])
     @commands.guild_only()
     @commands.is_owner()
     async def star_threshold(self, ctx, threshold):
@@ -264,4 +274,3 @@ class Config(commands.Cog):
         oldstar = await starchannel.fetch_message(starred['starred_id'])
         await oldstar.delete()
         await db.del_starred(starred['original_id'])
-
