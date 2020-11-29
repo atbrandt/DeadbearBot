@@ -3,6 +3,7 @@ from pathlib import Path
 
 
 # Set platform-independent path to db file and migrations folder
+DBPATH = ""
 for path in Path(__file__).parents[2].rglob('bot.db'):
     DBPATH = path
 if not DBPATH:
