@@ -447,11 +447,12 @@ class Embeds(commands.Cog):
         for rank, member in enumerate(members):
             gmember = ctx.guild.get_member(member['member_id'])
             if not gmember:
-                fields.append({'fname': f"#{rank + 1} - "
-                                        f"{member['member_id']} (Not Found)",
-                               'fdesc': f"**Level: {member['lvl']}** "
-                                        f"- {member['xp']} xp",
-                               'inline': False})
+                continue
+                # fields.append({'fname': f"#{rank + 1} - "
+                #                        f"{member['member_id']} (Not Found)",
+                #               'fdesc': f"**Level: {member['lvl']}** "
+                #                        f"- {member['xp']} xp",
+                #               'inline': False})
             else:
                 fields.append({'fname': f"#{rank + 1} - {gmember.display_name}",
                                'fdesc': f"**Level: {member['lvl']}** "
