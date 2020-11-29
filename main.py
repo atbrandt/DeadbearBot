@@ -23,8 +23,8 @@ if ENVFILE.exists():
 else:
     print("No bot token found!")
     token = input("Enter your bot's token: ")
-    with Path.open(ENVFILE, 'w', encoding='utf-8') as file:
-        file.write(f"export DEADBEAR_TOKEN=\'{token}\'")
+    with ENVFILE.open('w', encoding='utf-8') as f:
+        f.write(f"export DEADBEAR_TOKEN=\'{token}\'")
 
 
 # Create callable to obtain guild-specific alias for command prefix
