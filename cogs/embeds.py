@@ -103,11 +103,12 @@ class Embeds(commands.Cog):
 
 
     # Make the bot say things in a nice embedded way
-    @commands.group(name='BotSay',
-                    description="Make the bot create an embedded message.",
-                    brief="Make the bot talk.",
-                    aliases=['say'],
-                    invoke_without_command=True)
+    @commands.group(
+        name='BotSay',
+        description="Make the bot create an embedded message.",
+        brief="Make the bot talk.",
+        aliases=['botsay', 'say'],
+        invoke_without_command=True)
     @commands.guild_only()
     @commands.is_owner()
     async def say(self, ctx, *, content: str=None):
@@ -121,10 +122,11 @@ class Embeds(commands.Cog):
 
 
     # Edit an embedded message from the bot
-    @say.command(name='EditBotSay',
-                 description="Edit a previously created embedded message.",
-                 brief="Change a bot message.",
-                 aliases=['e', 'edit'])
+    @say.command(
+        name='Edit',
+        description="Edit a previously created embedded message.",
+        brief="Change a bot message.",
+        aliases=['edit', 'e'])
     @commands.guild_only()
     @commands.is_owner()
     async def edit_say(self, ctx, message: discord.Message, *, content: str=None):
@@ -151,11 +153,12 @@ class Embeds(commands.Cog):
 
 
     # Command to return a user's profile
-    @commands.group(name='Profile',
-                    description="Display your profile information.",
-                    brief="Get your profile.",
-                    aliases=['prof', 'profile'],
-                    invoke_without_command=True)
+    @commands.group(
+        name='Profile',
+        description="Display your profile information.",
+        brief="Get your profile.",
+        aliases=['profile', 'prof'],
+        invoke_without_command=True)
     @commands.guild_only()
     @checks.check_perms()
     async def profile(self, ctx, *, member: discord.Member=None):
@@ -194,10 +197,11 @@ class Embeds(commands.Cog):
 
 
     # Command to fill out profile info via DM
-    @profile.command(name='Edit',
-                     description="Edit your member profile information.",
-                     brief="Edit profile information.",
-                     aliases=['e', 'edit'])
+    @profile.command(
+        name='Edit',
+        description="Edit your member profile information.",
+        brief="Edit profile information.",
+        aliases=['edit', 'e'])
     @commands.guild_only()
     @checks.check_perms()
     async def profile_manager(self, ctx):
@@ -222,12 +226,9 @@ class Embeds(commands.Cog):
 
 
     # Command for obtaining a daily cash award
-    @commands.command(name='DailyCredits',
-                      aliases=['daily',
-                               'credits',
-                               'cashme',
-                               'dailycredits',
-                               'getmoney'])
+    @commands.command(
+        name='DailyCredits',
+        aliases=['dailycredits', 'daily', 'credits', 'cashme', 'getmoney'])
     @commands.guild_only()
     @checks.check_perms()
     async def daily_cash(self, ctx):
@@ -270,9 +271,10 @@ class Embeds(commands.Cog):
 
 
     # Shop menu function. This is hacky and needs a lot of refinement.
-    @commands.group(name='GuildShop',
-                    aliases=['shop'],
-                    invoke_without_command=True)
+    @commands.group(
+        name='GuildShop',
+        aliases=['guildshop', 'shop'],
+        invoke_without_command=True)
     @commands.guild_only()
     @checks.check_perms()
     async def shop(self, ctx):
@@ -365,7 +367,9 @@ class Embeds(commands.Cog):
 
 
     # Command to set item availability in the shop
-    @shop.command(name='available')
+    @shop.command(
+        name='Available',
+        aliases=['available', 'a'])
     @commands.guild_only()
     @checks.check_perms()
     async def available(self, ctx, data: str, input: int):
@@ -406,7 +410,9 @@ class Embeds(commands.Cog):
 
 
     # Command to set item price in the shop
-    @shop.command(name='price')
+    @shop.command(
+        name='Price',
+        aliases=['price', 'Cost', 'cost', 'p', 'c'])
     @commands.guild_only()
     @checks.check_perms()
     async def price(self, ctx, data: str, input: int):
@@ -427,9 +433,10 @@ class Embeds(commands.Cog):
 
 
     # Command to display current guild leaderboard
-    @commands.command(name='Leaderboard',
-                 description="Display the guild leaderboard",
-                 aliases=['lb'])
+    @commands.command(
+        name='Leaderboard',
+        description="Display the guild leaderboard",
+        aliases=['leaderboard', 'lb'])
     @commands.guild_only()
     @checks.check_perms()
     async def leaderboard(self, ctx):
