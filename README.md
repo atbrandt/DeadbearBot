@@ -86,4 +86,12 @@ The current to-do list can be found in Issues under the "Enhancement" tag. In ad
 [-vr d / delete] - Deletes a voice role by its [unique_id]  
 [-vr l / list] - Lists all voice roles and their id's  
 
-### If you like this project, consider tipping me on [Patreon](https://www.patreon.com/DEADBEAR)
+## Credits
+This bot is made possible thanks to:  
+- The ![discord.py project](https://github.com/Rapptz/discord.py)  
+- The ![aiosqlite module](https://github.com/jreese/aiosqlite)  
+- The ![python-dotenv module](https://github.com/theskumar/python-dotenv)  
+- The ![PyYAML module](https://github.com/yaml/pyyaml)  
+
+If you like this project, consider donating to any of the projects listed above!  
+If you'd like to contribute to this project directly, you can find me on ![Patreon](https://www.patreon.com/DEADBEAR)  
