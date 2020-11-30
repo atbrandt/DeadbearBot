@@ -20,7 +20,7 @@ The current to-do list can be found in Issues under the "Enhancement" tag. In ad
 * A pre-hosted version of the bot that can simply be invited to a server, no self-hosting required
 
 ## How do I use it?
-1. Create a bot application through the ![Discord Developer Portal](https://discord.com/developers/applications/)
+1. Create a bot application through the [Discord Developer Portal](https://discord.com/developers/applications/)
 2. Under the "Bot" tab, toggle on the "Presence" and "Server Members" intents
 3. Invite your bot to your server with administrator privileges
 4. Clone this repository, or download and extract the files manually
@@ -88,10 +88,10 @@ The current to-do list can be found in Issues under the "Enhancement" tag. In ad
 
 ## Credits
 This bot is made possible thanks to:  
-- The ![discord.py project](https://github.com/Rapptz/discord.py)  
-- The ![aiosqlite module](https://github.com/jreese/aiosqlite)  
-- The ![python-dotenv module](https://github.com/theskumar/python-dotenv)  
-- The ![PyYAML module](https://github.com/yaml/pyyaml)  
+- The [discord.py project](https://github.com/Rapptz/discord.py)  
+- The [aiosqlite module](https://github.com/jreese/aiosqlite)  
+- The [python-dotenv module](https://github.com/theskumar/python-dotenv)  
+- The [PyYAML module](https://github.com/yaml/pyyaml)  
 - Inspiration from the project [NadekoBot](https://nadeko.bot/)
 
 If you like this project, consider donating to any of the projects listed above!  
