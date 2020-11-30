@@ -47,27 +47,29 @@ class Embeds(commands.Cog):
             self.closebtn = u"\U0001F1FD"
             max = len(self.numbtns)
             self.pages = [fields[i*max:(i+1)*max] for i in range((len(fields)+max-1)//max)]
-            self.page = 0
-            self.pfields = self.pages[self.page]
+            self.page = 1
+            self.pfields = self.pages[self.page - 1]
             self.selected = None
             self.user = user
             self.validemoji = None
             super().__init__(title=head, description=desc)
-            super().set_footer(text=f"Page {self.page + 1}/{len(self.pages)}")
+            super().set_footer(text=f"Page {self.page}/{len(self.pages)}")
 
 
         async def add_fields(self):
             if self.numbers:
                 for i, item in enumerate(self.pfields):
-                    super().add_field(name=f"{i+1}. {item['fname']}",
-                                      value=item['fdesc'],
-                                      inline=item['inline'])
+                    super().add_field(
+                        name=f"{i+1}. {item['fname']}",
+                        value=item['fdesc'],
+                        inline=item['inline'])
                 self.validemoji = self.numbtns[:len(self.pfields)]
             else:
                 for item in self.pfields:
-                    super().add_field(name=f"{item['fname']}",
-                                      value=item['fdesc'],
-                                      inline=item['inline'])
+                    super().add_field(
+                        name=f"{item['fname']}",
+                        value=item['fdesc'],
+                        inline=item['inline'])
 
 
         async def add_control(self, message):
@@ -83,6 +85,7 @@ class Embeds(commands.Cog):
                 for index, item in enumerate(self.pfields):
                     await self.message.add_reaction(self.numbtns[index])
             await self.message.edit(content=None)
+            return True
 
 
         async def process_reaction(self, emoji):
@@ -91,14 +94,15 @@ class Embeds(commands.Cog):
                     index = self.validemoji.index(emoji)
                     self.selected = self.pfields[index]
             elif self.nav and (emoji in self.navbtns):
-                if emoji == self.navbtns[0] and self.page != 0:
-                    self.page -= 1
-                elif self.page != len(self.pages)-1:
+                if emoji == self.navbtns[0]:
+                    if self.page > 1:
+                        self.page -= 1
+                elif self.page < len(self.pages):
                     self.page += 1
-                self.pfields = self.pages[self.page]
+                self.pfields = self.pages[self.page - 1]
                 self.clear_fields()
                 await self.add_fields()
-                self.set_footer(text=f"Page {self.page + 1}/{len(self.pages)}")
+                self.set_footer(text=f"Page {self.page}/{len(self.pages)}")
                 await self.message.edit(embed=self)
 
 
@@ -192,8 +196,9 @@ class Embeds(commands.Cog):
         avatar = member.avatar_url_as(format='png')
         Profile.set_thumbnail(url=avatar)
         message = await ctx.channel.send(embed=Profile)
-        await Profile.add_control(message)
-        await self.wait_for_select(Profile, 55.0)
+        controls = await Profile.add_control(message)
+        if controls:
+            await self.wait_for_select(Profile, 55.0)
 
 
     # Command to fill out profile info via DM
@@ -212,8 +217,9 @@ class Embeds(commands.Cog):
         PM = self.MenuEmbed(ctx.author, head, desc, fields, True)
         await PM.add_fields()
         message = await ctx.channel.send(embed=PM)
-        await PM.add_control(message)
-        await self.wait_for_select(PM, 55.0)
+        controls = await PM.add_control(message)
+        if controls:
+            await self.wait_for_select(PM, 55.0)
         edit = "**Instructions being sent via DM, check your messages.**"
         await message.edit(content=edit, delete_after=5.0)
         reply = (f"{PM.selected['prompt']}\n\n"
@@ -327,39 +333,46 @@ class Embeds(commands.Cog):
         Shop = self.MenuEmbed(ctx.author, head, desc, fields, True)
         await Shop.add_fields()
         message = await ctx.channel.send(embed=Shop)
-        await Shop.add_control(message)
-        bought = False
-        while not bought:
-            await self.wait_for_select(Shop, 55.0)
-            if not Shop.selected:
-                break
-            elif Shop.selected['available'] == 0:
-                edit = (f"**{Shop.selected['fname']} is not currently "
-                        f"available. Please select another item.**")
-                await message.edit(content=edit)
-            elif dbprof['cash'] < Shop.selected['price']:
-                edit = f"**Not enough credits for {Shop.selected['fname']}!**"
-                await message.edit(content=edit)
-            else:
-                newbalance = dbprof['cash'] - Shop.selected['price']
-                await db.set_member(ctx.guild.id,
-                                    ctx.author.id,
-                                    'cash',
-                                    newbalance)
-                if Shop.selected['data'] == 'role':
-                    if Shop.selected['available'] > 0:
-                        await db.set_cfg(ctx.guild.id,
-                                         'crole_available',
-                                         Shop.selected['available'] - 1)
-                bought = True
-        if bought:
+        controls = await Shop.add_control(message)
+        if controls:
+            bought = False
+            while not bought:
+                await self.wait_for_select(Shop, 55.0)
+                # If no item was purchased, exit the command
+                if not Shop.selected:
+                    break
+                # If none of selected item are available, throw error to user
+                elif Shop.selected['available'] == 0:
+                    edit = (f"**{Shop.selected['fname']} is not currently "
+                            f"available. Please select another item.**")
+                    await message.edit(content=edit)
+                # If user doesn't have enough credits for item, throw error to user
+                elif dbprof['cash'] < Shop.selected['price']:
+                    edit = f"**Not enough credits for {Shop.selected['fname']}!**"
+                    await message.edit(content=edit)
+                # If checks pass, process purchase and set bought to true
+                else:
+                    newbalance = dbprof['cash'] - Shop.selected['price']
+                    await db.set_member(
+                        ctx.guild.id,
+                        ctx.author.id,
+                        'cash',
+                        newbalance)
+                    if Shop.selected['data'] == 'role':
+                        if Shop.selected['available'] > 0:
+                            await db.set_cfg(
+                                ctx.guild.id,
+                                'crole_available',
+                                Shop.selected['available'] - 1)
+                    bought = True
             if Shop.selected['prompt2']:
                 edit = f"**{Shop.selected['fname']} bought! Check your DM's.**"
                 await message.edit(content=edit, delete_after=5.0)
-                await db.add_temp(ctx.guild.id,
-                                  ctx.author.id,
-                                  "Shop",
-                                  Shop.selected['data'])
+                await db.add_temp(
+                    ctx.guild.id,
+                    ctx.author.id,
+                    "Shop",
+                    Shop.selected['data'])
                 await ctx.author.send(content=Shop.selected['prompt'])
             else:
                 edit = f"**{Shop.selected['fname']} bought!**"
@@ -465,8 +478,9 @@ class Embeds(commands.Cog):
         LB = self.MenuEmbed(ctx.author, head, desc, fields)
         await LB.add_fields()
         message = await ctx.channel.send(embed=LB)
-        await LB.add_control(message)
-        await self.wait_for_select(LB, 55.0)
+        controls = await LB.add_control(message)
+        if controls:
+            await self.wait_for_select(LB, 55.0)
 
 
     # Do stuff when a message is sent
@@ -525,16 +539,18 @@ class Embeds(commands.Cog):
 
         while not Menu.selected:
             try:
-                payload = await self.bot.wait_for('raw_reaction_add',
-                                                timeout=time,
-                                                check=check)
+                payload = await self.bot.wait_for(
+                    'raw_reaction_add',
+                    timeout=time,
+                    check=check)
                 await Menu.message.remove_reaction(payload.emoji, Menu.user)
                 if payload.emoji.name == Menu.closebtn:
                     raise asyncio.TimeoutError()
             except asyncio.TimeoutError:
                 await Menu.message.clear_reactions()
-                await Menu.message.edit(content="Menu closing in 5 seconds...",
-                                delete_after=5.0)
+                await Menu.message.edit(
+                    content="Menu closing in 5 seconds...",
+                    delete_after=5.0)
                 break
             else:
                 await Menu.process_reaction(payload.emoji.name)
