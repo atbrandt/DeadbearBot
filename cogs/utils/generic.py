@@ -1,9 +1,9 @@
-from datetime import date, datetime
+from datetime import date
 
 import discord
 from discord.ext import commands, tasks
 
-from .db import get_members_bday_equals_date
+from .db import get_members_by_bday
 
 
 class Generic(commands.Cog):
@@ -74,7 +74,7 @@ class Generic(commands.Cog):
     # Send a message to a user on their birthday
     @tasks.loop(hours=24)
     async def birthday_alert(self):
-        members = await get_members_bday_equals_date(date.today())
+        members = await get_members_by_bday(date.today())
         for member in members:
             member_id = member['member_id']
             user = self.bot.get_user(member_id)
