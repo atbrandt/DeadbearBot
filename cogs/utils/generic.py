@@ -1,10 +1,15 @@
+from datetime import date
+
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
+
+from .db import get_members_by_bday
 
 
 class Generic(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.birthday_alert.start()
 
 
     # Testing command
@@ -65,4 +70,22 @@ class Generic(commands.Cog):
     async def on_message_delete(self, message):
         pass
 
-# add blurbs, reminders, birthday alerts
+
+    # Send a message to a user on their birthday
+    @tasks.loop(hours=24)
+    async def birthday_alert(self):
+        members = await get_members_by_bday(date.today())
+        for member in members:
+            member_id = member['member_id']
+            user = self.bot.get_user(member_id)
+            if user:
+                reply = f"Happy birthday, **{user.name}**!"
+                await user.send(content=reply)
+
+
+    # Wait until the bot is ready before the birthday_alert loop starts
+    @birthday_alert.before_loop
+    async def before_birthday_alert(self):
+        await self.bot.wait_until_ready()
+        
+# add blurbs, reminders
