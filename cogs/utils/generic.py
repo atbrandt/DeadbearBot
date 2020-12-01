@@ -78,8 +78,9 @@ class Generic(commands.Cog):
         for member in members:
             member_id = member['member_id']
             user = self.bot.get_user(member_id)
-            reply = f"Happy birthday, **{user.name}**!"
-            await user.send(content=reply)
+            if user:
+                reply = f"Happy birthday, **{user.name}**!"
+                await user.send(content=reply)
 
 
     # Wait until the bot is ready before the birthday_alert loop starts
