@@ -1,10 +1,15 @@
+from datetime import date, datetime
+
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
+
+from .db import get_all_guilds, get_all_members
 
 
 class Generic(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.birthday_alert.start()
 
 
     # Testing command
@@ -60,9 +65,29 @@ class Generic(commands.Cog):
         await ctx.channel.send(f"```{output}```")
 
 
-    # Do stuff when a message is deleted
-    @commands.Cog.listener()
-    async def on_message_delete(self, message):
-        pass
+    # Send a message to a user on their birth day
+    @tasks.loop(hours=24)
+    async def birthday_alert(self):
+        # List to save id of members who already recieved a msg
+        member_ids_sent = []
+        guild_ids = await get_all_guilds()
+        for guild_id in guild_ids:
+            members = await get_all_members(guild_id)
+            for member in members:
+                member_id = member['member_id']
+                if member['birthday'] == None or member_id in member_ids_sent:
+                    continue
+                bday = datetime.strptime(member['birthday'], '%Y-%m-%d')
+                now = date.today()
+                if (bday.month, bday.day) == (now.month, now.day):
+                    user = self.bot.get_user(member_id)
+                    reply = f"Happy birthday, **{user.name}**!"
+                    await user.send(content=reply)
+                    member_ids_sent.append(member_id)
 
-# add blurbs, reminders, birthday alerts
+    # Wait until the bot is ready before the birthday_alert loop starts
+    @birthday_alert.before_loop
+    async def before_birthday_alert(self):
+        await self.bot.wait_until_ready()
+        
+# add blurbs, reminders
