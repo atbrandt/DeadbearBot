@@ -172,6 +172,21 @@ async def set_member(guildID, memberID, option, value):
     await conn.close()
 
 
+# Returns members who have birthday on a given date
+async def get_members_bday_equals_date(date):
+    conn = await db_connect()
+    c = await conn.cursor()
+    sql = f"""
+    SELECT MIN(member_id) AS member_id, *
+    FROM members
+    WHERE birthday LIKE '%{date.strftime('%m')}-{date.strftime('%d')}%'
+        OR birthday LIKE '%{date.month}-{date.day}%';"""
+    await c.execute(sql)
+    fetched = await c.fetchall()
+    await conn.close()
+    return fetched
+
+
 # Returns all reaction roles of a given guild
 async def get_react_roles(guildID):
     conn = await db_connect()
