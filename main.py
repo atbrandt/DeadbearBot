@@ -98,6 +98,7 @@ async def filter_member(member):
 
 # Add guild function
 async def add_guild(guild):
+    print("Checking Guilds...")
     await db.add_guild(guild.id)
     botrole = await db.get_cfg(guild.id, 'bot_role')
     if not botrole:
@@ -116,5 +117,8 @@ if __name__ == '__main__':
     try:
         bot.run(token)
     except discord.PrivilegedIntentsRequired:
-        print("Privileged Intents are required to use this bot. "
+        print(
+            "Privileged Intents are required to use this bot. "
             "Enable them through the Discord Developer Portal.")
+    except discord.DiscordException as e:
+        print(e)
