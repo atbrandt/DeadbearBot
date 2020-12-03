@@ -89,7 +89,9 @@ class Embeds(commands.Cog):
 
 
         async def process_reaction(self, emoji):
-            if self.numbers:
+            if emoji == self.closebtn:
+                return False
+            elif self.numbers:
                 if emoji in self.validemoji:
                     index = self.validemoji.index(emoji)
                     self.selected = self.pfields[index]
@@ -220,6 +222,8 @@ class Embeds(commands.Cog):
         controls = await PM.add_control(message)
         if controls:
             await self.wait_for_select(PM, 55.0)
+        if not PM.selected:
+            return
         edit = "**Instructions being sent via DM, check your messages.**"
         await message.edit(content=edit, delete_after=5.0)
         reply = (f"{PM.selected['prompt']}\n\n"
@@ -572,8 +576,7 @@ class Embeds(commands.Cog):
             return
         if selected['format'] == 'date':
             try:
-                datetime.strptime(message.content, '%Y-%m-%d')
-                option = message.content
+                option = datetime.strptime(message.content, '%Y-%m-%d')
                 alert = f"Your profile `{selected['fname']}` has been set!"
             except ValueError:
                 await message.author.send("Date in wrong format!")
@@ -587,7 +590,7 @@ class Embeds(commands.Cog):
         await db.set_member(temp['guild_id'],
                             temp['member_id'],
                             selected['data'],
-                            option)
+                            str(option))
         await db.del_temp(message.author.id)
         await message.author.send(content=alert)
 
