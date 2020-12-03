@@ -25,6 +25,7 @@ def migrate():
             migrations.append(child)
 
     # Check if db matches latest version available, then update if not
+    print("Checking DB version...")
     latest = sorted(migrations, reverse=True)
     latestver = int(latest[0].stem)
     if dbver[0] < latestver:
