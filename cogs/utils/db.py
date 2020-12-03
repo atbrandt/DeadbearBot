@@ -202,15 +202,13 @@ async def set_member(guildID, memberID, option, value):
 async def get_members_by_bday(date):
     conn = await db_connect()
     c = await conn.cursor()
-    date_valid_format = f"%{date.strftime('%m')}-{date.strftime('%d')}%"
-    date_invalid_format = f"%{date.month}-{date.day}%"
-    sql = f"""
+    date_format = f"%{date.month}-{date.day}"
+    sql = """
     SELECT *
     FROM members
     WHERE birthday LIKE ?
-        OR birthday LIKE ?
     GROUP BY member_id;"""
-    await c.execute(sql, (date_valid_format, date_invalid_format,))
+    await c.execute(sql, (date_format,))
     fetched = await c.fetchall()
     await conn.close()
     return fetched
