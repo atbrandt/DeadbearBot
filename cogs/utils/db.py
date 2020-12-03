@@ -198,6 +198,24 @@ async def set_member(guildID, memberID, option, value):
     raise Exception(f"No column found for {option}.")
 
 
+# Returns members who have birthday on a given date
+async def get_members_by_bday(date):
+    conn = await db_connect()
+    c = await conn.cursor()
+    date_valid_format = f"%{date.strftime('%m')}-{date.strftime('%d')}%"
+    date_invalid_format = f"%{date.month}-{date.day}%"
+    sql = f"""
+    SELECT *
+    FROM members
+    WHERE birthday LIKE ?
+        OR birthday LIKE ?
+    GROUP BY member_id;"""
+    await c.execute(sql, (date_valid_format, date_invalid_format,))
+    fetched = await c.fetchall()
+    await conn.close()
+    return fetched
+
+
 # Returns all reaction roles of a given guild
 async def get_react_roles(guildID):
     conn = await db_connect()
