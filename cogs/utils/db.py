@@ -66,13 +66,26 @@ async def get_cfg(guildID, option):
 async def set_cfg(guildID, option, value):
     conn = await db_connect()
     c = await conn.cursor()
-    sql = f"""
-    UPDATE guilds
-    SET {option} = ?
-    WHERE id = ?;"""
-    await c.execute(sql, (value, guildID,))
-    await conn.commit()
+    sql = """
+    SELECT *
+    FROM guilds;"""
+    await c.execute(sql)
+    row = await c.fetchone()
+    names = row.keys()
+    # To avoid the risk of injection attacks, this fstring is only performed
+    # if the option passed in exactly matches an existing column name.
+    for header in names:
+        if option == header:
+            sql = f"""
+            UPDATE guilds
+            SET {option} = ?
+            WHERE id = ?;"""
+            await c.execute(sql, (value, guildID,))
+            await conn.commit()
+            await conn.close()
+            return
     await conn.close()
+    raise Exception(f"No column found for {option}.")
 
 
 # Resets a guild's config values to default
@@ -162,14 +175,27 @@ async def get_member(guildID, memberID):
 async def set_member(guildID, memberID, option, value):
     conn = await db_connect()
     c = await conn.cursor()
-    sql = f"""
-    UPDATE members
-    SET {option} = ?
-    WHERE guild_id = ?
-    AND member_id = ?;"""
-    await c.execute(sql, (value, guildID, memberID,))
-    await conn.commit()
+    sql = """
+    SELECT *
+    FROM members;"""
+    await c.execute(sql)
+    row = await c.fetchone()
+    names = row.keys()
+    # To avoid the risk of injection attacks, this fstring is only performed
+    # if the option passed in exactly matches an existing column name.
+    for header in names:
+        if option == header:
+            sql = f"""
+            UPDATE members
+            SET {option} = ?
+            WHERE guild_id = ?
+            AND member_id = ?;"""
+            await c.execute(sql, (value, guildID, memberID,))
+            await conn.commit()
+            await conn.close()
+            return
     await conn.close()
+    raise Exception(f"No column found for {option}.")
 
 
 # Returns all reaction roles of a given guild
