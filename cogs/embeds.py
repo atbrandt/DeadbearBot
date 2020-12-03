@@ -571,13 +571,14 @@ class Embeds(commands.Cog):
                                 selected['data'],
                                 None)
             await db.del_temp(message.author.id)
-            alert = f"Your profile `{selected['fname']}` has been cleared!"
+            alert = f"Your profile's `{selected['fname']}` has been cleared!"
             await message.author.send(content=alert)
             return
         if selected['format'] == 'date':
             try:
-                option = datetime.strptime(message.content, '%Y-%m-%d')
-                alert = f"Your profile `{selected['fname']}` has been set!"
+                entered = datetime.strptime(message.content, '%Y-%m-%d')
+                option = entered.date()
+                alert = f"Your profile's `{selected['fname']}` has been set!"
             except ValueError:
                 await message.author.send("Date in wrong format!")
                 return
