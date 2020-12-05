@@ -280,6 +280,101 @@ class Embeds(commands.Cog):
                 f"Here's a 500 credit freebie, {member.mention}!")
 
 
+    # Command to transfer currency from one user to another
+    @commands.command(
+        name='Transfer',
+        description="Transfer credits from one user to another.",
+        aliases=['transfer'])
+    @commands.guild_only()
+    @checks.check_perms()
+    async def transfer(self, ctx, amount: int, member: discord.Member):
+        if amount < 1:
+            await ctx.channel.send(
+                "Minumum amount of credits to transfer is 1.")
+            return
+        if ctx.author == member:
+            await ctx.channel.send("Can't transfer credits to yourself.")
+            return
+        dbprof_author = await db.get_member(ctx.author.guild.id, ctx.author.id)
+        if amount > dbprof_author['cash']:
+            await ctx.channel.send(
+                "Provided amount is higher than owned credits.")
+            return
+        dbprof_member = await db.get_member(member.guild.id, member.id)
+        await db.set_member(
+            dbprof_author['guild_id'], dbprof_author['member_id'], 'cash',
+            dbprof_author['cash'] - amount)
+        await db.set_member(
+            dbprof_member['guild_id'], dbprof_member['member_id'], 'cash',
+            dbprof_member['cash'] + amount)
+        await ctx.channel.send(
+            f"{member.mention} recieved {amount} credit(s) from {ctx.author.mention}.")
+
+
+    # Error handler for transfer
+    @transfer.error
+    async def transfer_handler(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            if error.param.name == 'amount':
+                await ctx.send(
+                    "You forgot to give an amount of credits to transfer.")
+                return
+            elif error.param.name == 'member':
+                await ctx.send(
+                    "You forgot to mention a member you wish to transfer.")
+                return
+        elif isinstance(error, commands.BadArgument):
+            if error.args[0] == 'Converting to "int" failed for parameter "amount".':
+                await ctx.channel.send(
+                    "Please provide a valid amount of credits.")
+                return
+            else:
+                await ctx.send("Member not found.")
+                return
+        else:
+            raise error
+
+
+    # Command to award currency to a user
+    @commands.command(
+        name='Award',
+        description="Award a user with credits.",
+        aliases=['award'])
+    @commands.guild_only()
+    @commands.is_owner()
+    async def award(self, ctx, amount: int, member: discord.Member):
+        if amount < 1:
+            await ctx.channel.send(
+                "Minumum amount of credits to award is 1.")
+            return
+        dbprof_member = await db.get_member(member.guild.id, member.id)
+        await db.set_member(
+            dbprof_member['guild_id'], dbprof_member['member_id'], 'cash',
+            dbprof_member['cash'] + amount)
+        await ctx.channel.send(
+            f"{member.mention} got awarded with {amount} credit(s).")
+
+
+    # Command to remove currency from a user
+    @commands.command(
+        name='Seize',
+        description="Remove credits from a user.",
+        aliases=['seize'])
+    @commands.guild_only()
+    @commands.is_owner()
+    async def seize(self, ctx, amount: int, member: discord.Member):
+        if amount < 1:
+            await ctx.channel.send(
+                "Minumum amount of credits to remove is 1.")
+            return
+        dbprof_member = await db.get_member(member.guild.id, member.id)
+        await db.set_member(
+            dbprof_member['guild_id'], dbprof_member['member_id'], 'cash',
+            dbprof_member['cash'] - amount)
+        await ctx.channel.send(
+            f"{amount} credit(s) has been taken from {member.mention}.")
+
+
     # Shop menu function. This is hacky and needs a lot of refinement.
     @commands.group(
         name='GuildShop',
