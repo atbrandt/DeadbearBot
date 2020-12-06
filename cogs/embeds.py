@@ -371,52 +371,71 @@ class Embeds(commands.Cog):
     @commands.guild_only()
     @checks.check_perms()
     async def shop(self, ctx):
+        # Get invoker profile for display of current balance
         dbprof = await db.get_member(ctx.guild.id, ctx.author.id)
+        # Get guild-specific data for the shop values and currency symbol
         crole_available = await db.get_cfg(ctx.guild.id, 'crole_available')
         crole_price = await db.get_cfg(ctx.guild.id, 'crole_price')
         cemoji_available = await db.get_cfg(ctx.guild.id, 'cemoji_available')
         cemoji_price = await db.get_cfg(ctx.guild.id, 'cemoji_price')
-        strings = await self.get_strings('Shop')
-        head = strings['head'].format(ctx.guild.name)
         currency = await db.get_cfg(ctx.guild.id, 'currency')
         if currency.isdigit():
             try:
-                currency = await commands.EmojiConverter().convert(ctx, currency)
+                currency = await commands.EmojiConverter().convert(
+                    ctx,
+                    currency)
             except:
                 currency = "\U0001F48E"
+        # Get default strings for the shop menu
+        strings = await self.get_strings('Shop')
+        # Set header and description of embed based on guild and invoker info
+        head = strings['head'].format(ctx.guild.name)
         desc = strings['desc'].format(ctx.author.name, currency, dbprof['cash'])
+        # Modify strings to include guild-specific data
         fields = []
         for item in strings['fields']:
+            # Set price and availability of item
             if item['data'] == 'role':
                 item['available'] = crole_available
                 item['price'] = crole_price
             elif item['data'] == 'emoji':
                 item['available'] = cemoji_available
                 item['price'] = cemoji_price            
+            # Add availability to item description
             if item['available'] == 0:
-                item['fdesc'] = (f"{item['fdesc']}\n\n"
-                                 f"Available: None\n"
-                                 f"Price: {currency}")
+                item['fdesc'] = (
+                    f"{item['fdesc']}\n\n"
+                    f"Available: None")
             elif item['available'] < 0:
-                item['fdesc'] = (f"{item['fdesc']}\n\n"
-                                 f"Available: \u221E\n"
-                                 f"Price: {currency}")
+                item['fdesc'] = (
+                    f"{item['fdesc']}\n\n"
+                    f"Available: \u221E")
             else:
-                item['fdesc'] = (f"{item['fdesc']}\n\n"
-                                 f"Available: {item['available']}\n"
-                                 f"Price: {currency}")
+                item['fdesc'] = (
+                    f"{item['fdesc']}\n\n"
+                    f"Available: {item['available']}")
+            # Add price to item description
             if item['price'] == 0:
-                item['fdesc'] = f"{item['fdesc']} Free"                
+                item['fdesc'] = (
+                    f"{item['fdesc']}\n"
+                    f"Price: {currency} Free")
             else:
-                item['fdesc'] = f"{item['fdesc']} {item['price']}"                
+                item['fdesc'] = (
+                    f"{item['fdesc']}\n"
+                    f"Price: {currency} {item['price']}")
+            # Add file size and type limits to prompt
             if item['format'] == 'text':
-                item['prompt'] = (f"{item['prompt']}\n\n"
-                                  f"Max length: {item['limit']} characters")
+                item['prompt'] = (
+                    f"{item['prompt']}\n\n"
+                    f"Max length: {item['limit']} characters")
             elif item['format'] == 'image':
-                item['prompt'] = (f"{item['prompt']}\n\n"
-                                  f"Max size: {int(item['limit']/1000)}kb\n"
-                                  f"File types accepted: {item['types']}")
+                item['prompt'] = (
+                    f"{item['prompt']}\n\n"
+                    f"Max size: {int(item['limit']/1000)}kb\n"
+                    f"File types accepted: {item['types']}")
+            # Append the modified item to fields list
             fields.append(item)
+        # Create instance of Shop menu, add fields and controls, and then loop
         Shop = self.MenuEmbed(ctx.author, head, desc, fields, True)
         await Shop.add_fields()
         message = await ctx.channel.send(embed=Shop)
@@ -433,18 +452,17 @@ class Embeds(commands.Cog):
                     edit = (f"**{Shop.selected['fname']} is not currently "
                             f"available. Please select another item.**")
                     await message.edit(content=edit)
-                # If user doesn't have enough credits for item, throw error to user
+                # If user doesn't have enough credits, throw error to user
                 elif dbprof['cash'] < Shop.selected['price']:
-                    edit = f"**Not enough credits for {Shop.selected['fname']}!**"
+                    edit = (f"**You don't have enough credits for "
+                            f"{Shop.selected['fname']}!**")
                     await message.edit(content=edit)
                 # If checks pass, process purchase and set bought to true
                 else:
-                    newbalance = dbprof['cash'] - Shop.selected['price']
-                    await db.set_member(
+                    await db.remove_currency(
                         ctx.guild.id,
                         ctx.author.id,
-                        'cash',
-                        newbalance)
+                        Shop.selected['price'])
                     if Shop.selected['data'] == 'role':
                         if Shop.selected['available'] > 0:
                             await db.set_cfg(
@@ -452,6 +470,9 @@ class Embeds(commands.Cog):
                                 'crole_available',
                                 Shop.selected['available'] - 1)
                     bought = True
+            if not bought:
+                return
+            # If the item purchased requires a second step, send prompt2
             if Shop.selected['prompt2']:
                 edit = f"**{Shop.selected['fname']} bought! Check your DM's.**"
                 await message.edit(content=edit, delete_after=5.0)
