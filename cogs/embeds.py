@@ -302,7 +302,7 @@ class Embeds(commands.Cog):
             return
         await db.transfer_currency(ctx.guild.id, ctx.author.id, member.id, amount)
         await ctx.channel.send(
-            f"{member.mention} recieved {amount} credit(s) from {ctx.author.mention}.")
+            f"{ctx.author.mention} has given {amount} credits to {member.mention}.")
 
 
     # Error handler for transfer
@@ -343,7 +343,7 @@ class Embeds(commands.Cog):
             return
         await db.add_currency(ctx.guild.id, member.id, amount)
         await ctx.channel.send(
-            f"{member.mention} got awarded with {amount} credit(s).")
+            f"Awarded {amount} credits to {member.mention}.")
 
 
     # Command to remove currency from a user
@@ -360,7 +360,7 @@ class Embeds(commands.Cog):
             return
         await db.remove_currency(ctx.guild.id, member.id, amount)
         await ctx.channel.send(
-            f"{amount} credit(s) has been taken from {member.mention}.")
+            f"Removed {amount} credits from {member.mention}.")
 
 
     # Shop menu function. This is hacky and needs a lot of refinement.
