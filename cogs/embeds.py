@@ -300,13 +300,7 @@ class Embeds(commands.Cog):
             await ctx.channel.send(
                 "Provided amount is higher than owned credits.")
             return
-        dbprof_member = await db.get_member(member.guild.id, member.id)
-        await db.set_member(
-            dbprof_author['guild_id'], dbprof_author['member_id'], 'cash',
-            dbprof_author['cash'] - amount)
-        await db.set_member(
-            dbprof_member['guild_id'], dbprof_member['member_id'], 'cash',
-            dbprof_member['cash'] + amount)
+        await db.transfer_currency(ctx.guild.id, ctx.author.id, member.id, amount)
         await ctx.channel.send(
             f"{member.mention} recieved {amount} credit(s) from {ctx.author.mention}.")
 
@@ -347,10 +341,7 @@ class Embeds(commands.Cog):
             await ctx.channel.send(
                 "Minumum amount of credits to award is 1.")
             return
-        dbprof_member = await db.get_member(member.guild.id, member.id)
-        await db.set_member(
-            dbprof_member['guild_id'], dbprof_member['member_id'], 'cash',
-            dbprof_member['cash'] + amount)
+        await db.add_currency(ctx.guild.id, member.id, amount)
         await ctx.channel.send(
             f"{member.mention} got awarded with {amount} credit(s).")
 
@@ -367,10 +358,7 @@ class Embeds(commands.Cog):
             await ctx.channel.send(
                 "Minumum amount of credits to remove is 1.")
             return
-        dbprof_member = await db.get_member(member.guild.id, member.id)
-        await db.set_member(
-            dbprof_member['guild_id'], dbprof_member['member_id'], 'cash',
-            dbprof_member['cash'] - amount)
+        await db.remove_currency(ctx.guild.id, member.id, amount)
         await ctx.channel.send(
             f"{amount} credit(s) has been taken from {member.mention}.")
 

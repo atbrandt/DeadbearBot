@@ -196,8 +196,7 @@ class Config(commands.Cog):
                 cashmin = await db.get_cfg(guildID, 'min_cash')
                 cashmax = await db.get_cfg(guildID, 'max_cash')
                 cashaward = random.randrange(cashmin, cashmax)
-                newcash = profile['cash'] + cashaward
-                await db.set_member(guildID, member.id, 'cash', newcash)    
+                await db.add_currency(message.guild.id, member.id, cashaward)
                 curxp = profile['xp'] + 1
                 await db.set_member(guildID, member.id, 'xp', curxp)
                 nextlevel = profile['lvl'] + 1

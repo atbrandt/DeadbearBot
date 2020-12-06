@@ -214,6 +214,54 @@ async def get_members_by_bday(date):
     return fetched
 
 
+# Adds currency to a members balance
+async def add_currency(guild_id, member_id, amount):
+    conn = await db_connect()
+    c = await conn.cursor()
+    sql = """
+    UPDATE members
+    SET cash = cash + ?
+    WHERE guild_id = ?
+    AND member_id = ?;"""
+    await c.execute(sql, (amount, guild_id, member_id,))
+    await conn.commit()
+    await conn.close()
+
+
+# Removes currency from a members balance
+async def remove_currency(guild_id, member_id, amount):
+    conn = await db_connect()
+    c = await conn.cursor()
+    sql = """
+    UPDATE members
+    SET cash = cash - ?
+    WHERE guild_id = ?
+    AND member_id = ?;"""
+    await c.execute(sql, (amount, guild_id, member_id,))
+    await conn.commit()
+    await conn.close()
+
+
+# Transfers currency from one member to another
+async def transfer_currency(guild_id, author_id, member_id, amount):
+    conn = await db_connect()
+    c = await conn.cursor()
+    sql = """
+    UPDATE members
+    SET cash = cash - ?
+    WHERE guild_id = ?
+    AND member_id = ?;"""
+    await c.execute(sql, (amount, guild_id, author_id,))
+    sql = """
+    UPDATE members
+    SET cash = cash + ?
+    WHERE guild_id = ?
+    AND member_id = ?;"""
+    await c.execute(sql, (amount, guild_id, member_id,))
+    await conn.commit()
+    await conn.close()
+
+
 # Returns all reaction roles of a given guild
 async def get_react_roles(guildID):
     conn = await db_connect()
