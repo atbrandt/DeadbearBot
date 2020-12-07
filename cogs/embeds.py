@@ -171,7 +171,11 @@ class Embeds(commands.Cog):
     @checks.check_perms()
     async def profile(self, ctx, *, member: discord.Member=None):
         if member:
-            dbprof = await db.get_member(ctx.guild.id, member.id)
+            if member.bot:
+                await ctx.channel.send("Bots don't have profiles!")
+                return
+            else:
+                dbprof = await db.get_member(ctx.guild.id, member.id)
         else:
             dbprof = await db.get_member(ctx.guild.id, ctx.author.id)
             member = ctx.author
@@ -290,6 +294,9 @@ class Embeds(commands.Cog):
     @commands.guild_only()
     @checks.check_perms()
     async def transfer(self, ctx, amount: int, member: discord.Member):
+        if member.bot:
+            await ctx.channel.send("Bots don't have profiles!")
+            return
         if amount < 1:
             await ctx.channel.send(
                 "Minumum amount of credits to transfer is 1.")
@@ -339,6 +346,9 @@ class Embeds(commands.Cog):
     @commands.guild_only()
     @commands.is_owner()
     async def award(self, ctx, amount: int, member: discord.Member):
+        if member.bot:
+            await ctx.channel.send("Bots don't have profiles!")
+            return
         if amount < 1:
             await ctx.channel.send(
                 "Minumum amount of credits to award is 1.")
@@ -356,6 +366,9 @@ class Embeds(commands.Cog):
     @commands.guild_only()
     @commands.is_owner()
     async def seize(self, ctx, amount: int, member: discord.Member):
+        if member.bot:
+            await ctx.channel.send("Bots don't have profiles!")
+            return
         if amount < 1:
             await ctx.channel.send(
                 "Minumum amount of credits to remove is 1.")
