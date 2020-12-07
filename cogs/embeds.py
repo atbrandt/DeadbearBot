@@ -120,12 +120,20 @@ class Embeds(commands.Cog):
     @commands.is_owner()
     async def say(self, ctx, *, content: str=None):
         embed = discord.Embed(description=content)
-        if ctx.message.attachments[0].filename:
-            file = await ctx.message.attachments[0].to_file()
+        # Create a list of valid image formats for upload
+        validfiles = [".jpg", ".jpeg", ".gif", ".png", ".bmp"]
+        # If the message had an attachment, make sure it's a valid image
+        # If it is, preserve the original message so the url stays valid
+        if ctx.message.attachments[0]:
+            attachment = Path(ctx.message.attachments[0].filename)
+            if attachment.suffix in validfiles:
+                imageurl = ctx.message.attachments[0].url
+                embed.set_image(url=imageurl)
+            else:
+                await ctx.message.delete()
         else:
-            file = None
-        await ctx.channel.send(file=file, embed=embed)
-        await ctx.message.delete()
+            await ctx.message.delete()
+        await ctx.channel.send(embed=embed)
 
 
     # Edit an embedded message from the bot
@@ -137,7 +145,12 @@ class Embeds(commands.Cog):
     @commands.guild_only()
     @commands.is_owner()
     async def edit_say(self, ctx, message: discord.Message, *, content: str=None):
-        if content is not None:
+        # Only allow editing of the bot's messages
+        if message.author != self.bot.user:
+            await ctx.channel.send("I can't edit messages that aren't mine!")
+            return
+        # If no new text is passed in, preserve the original text as-is
+        if content:
             embed = discord.Embed(description=content)
         else:
             embedlist = message.embeds
@@ -146,17 +159,15 @@ class Embeds(commands.Cog):
                 embed = discord.Embed(description=content)
             else:
                 embed = discord.Embed()
+        # If changing the attachment, get new image and leave invoke message
         if ctx.message.attachments:
-            attachments = ctx.message.attachments
-            imageurl = attachments[0].url
+            imageurl = ctx.message.attachments[0].url
             embed.set_image(url=imageurl)
-        else:
-            embedlist = message.embeds
-            imageurl = embedlist[0].image.url
-            if imageurl:
-                embed.set_image(url=imageurl)
+        elif message.embeds[0].image:
+            imageurl = message.embeds[0].image.url
+            embed.set_image(url=imageurl)
+            await ctx.message.delete()
         await message.edit(embed=embed)
-        await ctx.message.delete()
 
 
     # Command to return a user's profile
