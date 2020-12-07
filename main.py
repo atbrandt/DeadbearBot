@@ -73,7 +73,7 @@ async def on_guild_join(guild):
 # Make the bot ignore commands until fully initialized
 @bot.event
 async def on_connect():
-    print(f"{bot.user.name} connected, user ID is {bot.user.id}. Getting ready...")
+    print(f"{bot.user.name} connected, ID is {bot.user.id}. Getting ready...")
     await bot.wait_until_ready()
 
 
@@ -93,7 +93,11 @@ async def filter_member(member):
         if dbmember:
             await db.del_member(member.guild.id, member.id)
     elif not dbmember:
-        await db.add_member(member.guild.id, member.id, member.created_at, member.joined_at)
+        await db.add_member(
+            member.guild.id,
+            member.id,
+            member.created_at,
+            member.joined_at)
 
 
 # Add guild function
