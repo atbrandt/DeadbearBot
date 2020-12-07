@@ -50,7 +50,6 @@ class Embeds(commands.Cog):
             for i in range((len(fields)+max-1)//max):
                 self.pages.append(fields[i*max:(i+1)*max])
             self.page = 1
-            self.pfields = self.pages[0]
             self.selected = None
             self.user = user
             self.validemoji = None
@@ -60,14 +59,14 @@ class Embeds(commands.Cog):
 
         async def add_fields(self):
             if self.numbers:
-                for i, item in enumerate(self.pfields):
+                for i, item in enumerate(self.pages[self.page-1]):
                     super().add_field(
                         name=f"{i+1}. {item['fname']}",
                         value=item['fdesc'],
                         inline=item['inline'])
-                self.validemoji = self.numbtns[:len(self.pfields)]
+                self.validemoji = self.numbtns[:len(self.pages[self.page-1])]
             else:
-                for item in self.pfields:
+                for item in self.pages[self.page - 1]:
                     super().add_field(
                         name=f"{item['fname']}",
                         value=item['fdesc'],
@@ -79,12 +78,12 @@ class Embeds(commands.Cog):
             content = "**Updating reactji buttons, please wait...**"
             await self.message.edit(content=content)
             await self.message.add_reaction(self.closebtn)
-            if len(self.pages) > 1:
-                self.nav = True
+            if not self.nav and len(self.pages) > 1:
                 for item in self.navbtns:
                     await self.message.add_reaction(item)
+                self.nav = True
             if self.numbers:
-                for index, item in enumerate(self.pfields):
+                for index, item in enumerate(self.pages[self.page-1]):
                     await self.message.add_reaction(self.numbtns[index])
             await self.message.edit(content=None)
             return True
@@ -96,18 +95,18 @@ class Embeds(commands.Cog):
             elif self.numbers:
                 if emoji in self.validemoji:
                     index = self.validemoji.index(emoji)
-                    self.selected = self.pfields[index]
+                    self.selected = self.pages[self.page-1][index]
             elif self.nav and (emoji in self.navbtns):
                 if emoji == self.navbtns[0]:
                     if self.page > 1:
                         self.page -= 1
                 elif self.page < len(self.pages):
                     self.page += 1
-                self.pfields = self.pages[self.page - 1]
                 self.clear_fields()
                 await self.add_fields()
                 self.set_footer(text=f"Page {self.page}/{len(self.pages)}")
                 await self.message.edit(embed=self)
+
 
 
     # Make the bot say things in a nice embedded way
@@ -170,39 +169,43 @@ class Embeds(commands.Cog):
     @commands.guild_only()
     @checks.check_perms()
     async def profile(self, ctx, *, member: discord.Member=None):
+        # If a member was passed in, make sure it's not a bot
         if member:
             if member.bot:
                 await ctx.channel.send("Bots don't have profiles!")
                 return
-            else:
-                dbprof = await db.get_member(ctx.guild.id, member.id)
+        # If no member was passed in or found, assume invoker is target
         else:
-            dbprof = await db.get_member(ctx.guild.id, ctx.author.id)
             member = ctx.author
+        # Get the DB profile info of the target
+        dbprof = await db.get_member(ctx.guild.id, member.id)
+        # Get the strings for the Profile menu from resources
         strings = await self.get_strings('Profile')
+        # Input target's level and guild name
         head = strings['head'].format(dbprof['lvl'])
         desc = strings['desc'].format(ctx.guild.name)
-        fields = []
-        for item in strings['fields']:
-            key = str(item['data'])
-            if not dbprof[key]:
-                continue
-            else:
-                item['fdesc'] = item['fdesc'] + str(dbprof[key])
-                fields.append(item)
+        # If the target has set their birthday, replace the date with their age
         if dbprof['birthday']:
+            dbprof = dict(dbprof)
             dt = datetime.strptime(dbprof['birthday'], '%Y-%m-%d')
             now = date.today()
             age = now.year-dt.year-((now.month, now.day)<(dt.month, dt.day))
-            for item in fields:
-                if item['data'] == 'birthday':
-                    item['fdesc'] = age
-                    break
+            dbprof['birthday'] = age
+        # Add any existing profile info to strings, then append it to fields
+        fields = []
+        for field in strings['fields']:
+            key = field['data']
+            if dbprof[key] is not None:
+                field['fdesc'] = f"{field['fdesc']}{dbprof[key]}"
+                fields.append(field)
+        # Create Profile menu using the updated strings
         Profile = self.MenuEmbed(ctx.author, head, desc, fields)
         await Profile.add_fields()
+        # Fill out remaining un-set fields using target info
         Profile.set_author(name=member.name)
         avatar = member.avatar_url_as(format='png')
         Profile.set_thumbnail(url=avatar)
+        # Send embed, add controls, and then loop
         message = await ctx.channel.send(embed=Profile)
         controls = await Profile.add_control(message)
         if controls:
@@ -389,16 +392,12 @@ class Embeds(commands.Cog):
         # Get invoker profile for display of current balance
         dbprof = await db.get_member(ctx.guild.id, ctx.author.id)
         # Get guild-specific data for the shop values and currency symbol
-        crole_available = await db.get_cfg(ctx.guild.id, 'crole_available')
-        crole_price = await db.get_cfg(ctx.guild.id, 'crole_price')
-        cemoji_available = await db.get_cfg(ctx.guild.id, 'cemoji_available')
-        cemoji_price = await db.get_cfg(ctx.guild.id, 'cemoji_price')
-        currency = await db.get_cfg(ctx.guild.id, 'currency')
-        if currency.isdigit():
+        dbcfg = await db.get_cfg(ctx.guild.id)
+        if dbcfg['currency'].isdigit():
             try:
                 currency = await commands.EmojiConverter().convert(
                     ctx,
-                    currency)
+                    dbcfg['currency'])
             except:
                 currency = u"\U0001F48E"
         # Get default strings for the shop menu
@@ -411,11 +410,11 @@ class Embeds(commands.Cog):
         for item in strings['fields']:
             # Set price and availability of item
             if item['data'] == 'role':
-                item['available'] = crole_available
-                item['price'] = crole_price
+                item['available'] = dbcfg['crole_available']
+                item['price'] = dbcfg['crole_price']
             elif item['data'] == 'emoji':
-                item['available'] = cemoji_available
-                item['price'] = cemoji_price            
+                item['available'] = dbcfg['cemoji_available']
+                item['price'] = dbcfg['cemoji_price']
             # Add availability to item description
             if item['available'] == 0:
                 item['fdesc'] = (
