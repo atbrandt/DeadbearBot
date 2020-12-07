@@ -49,7 +49,7 @@ async def get_all_guilds():
 
 
 # Returns a guild's config option from the guilds table
-async def get_cfg(guildID, option):
+async def get_cfg(guildID, option=None):
     conn = await db_connect()
     c = await conn.cursor()
     sql = """
@@ -59,7 +59,10 @@ async def get_cfg(guildID, option):
     await c.execute(sql, (guildID,))
     fetched = await c.fetchone()
     await conn.close()
-    return fetched[option]
+    if option:
+        return fetched[option]
+    else:
+        return fetched
 
 
 # Sets a config option for a guild in the guilds table
