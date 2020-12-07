@@ -47,23 +47,23 @@ embeds:
         data: 'cash'
     -   fname: "Name"
         fdesc: ""
-        inline: true
+        inline: false
         data: 'name'
     -   fname: "Nickname"
         fdesc: ""
-        inline: true
+        inline: false
         data: 'nickname'
     -   fname: "Age"
         fdesc: ""
-        inline: true
+        inline: false
         data: 'birthday'
     -   fname: "Gender"
         fdesc: ""
-        inline: true
+        inline: false
         data: 'gender'
     -   fname: "Location"
         fdesc: ""
-        inline: true
+        inline: false
         data: 'location'
     -   fname: "Description"
         fdesc: ""
@@ -71,11 +71,11 @@ embeds:
         data: 'description'
     -   fname: "Likes"
         fdesc: ""
-        inline: true
+        inline: false
         data: 'likes'
     -   fname: "Dislikes"
         fdesc: ""
-        inline: true
+        inline: false
         data: 'dislikes'
 -   name: "Manager"
     head: "**Profile Customizer**"
