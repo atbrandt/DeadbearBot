@@ -46,9 +46,11 @@ class Embeds(commands.Cog):
             self.nav = False
             self.closebtn = u"\U0001F1FD"
             max = len(self.numbtns)
-            self.pages = [fields[i*max:(i+1)*max] for i in range((len(fields)+max-1)//max)]
+            self.pages = []
+            for i in range((len(fields)+max-1)//max):
+                self.pages.append(fields[i*max:(i+1)*max])
             self.page = 1
-            self.pfields = self.pages[self.page - 1]
+            self.pfields = self.pages[0]
             self.selected = None
             self.user = user
             self.validemoji = None
@@ -385,7 +387,7 @@ class Embeds(commands.Cog):
                     ctx,
                     currency)
             except:
-                currency = "\U0001F48E"
+                currency = u"\U0001F48E"
         # Get default strings for the shop menu
         strings = await self.get_strings('Shop')
         # Set header and description of embed based on guild and invoker info
