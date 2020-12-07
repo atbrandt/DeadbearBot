@@ -94,5 +94,4 @@ This bot is made possible thanks to:
 - The [PyYAML module](https://github.com/yaml/pyyaml)  
 - Inspiration from the project [NadekoBot](https://nadeko.bot/)
 
-If you like this project, consider donating to any of the projects listed above!  
-If you'd like to contribute to this project directly, you can find me on [Patreon](https://www.patreon.com/DEADBEAR)  
+If you like this project, consider donating to any of the projects listed above!
