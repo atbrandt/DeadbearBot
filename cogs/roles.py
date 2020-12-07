@@ -226,25 +226,22 @@ class Roles(commands.Cog):
     # Do stuff to members upon joining guild
     @commands.Cog.listener()
     async def on_member_join(self, member):
-        autorole = await db.get_cfg(member.guild.id, 'auto_role')
-        if autorole:
-            role = member.guild.get_role(autorole)
+        dbcfg = await db.get_cfg(member.guild.id)
+        if dbcfg['auto_role']:
+            role = member.guild.get_role(dbcfg['auto_role'])
             await member.add_roles(role, reason="AutoRole")
-        joinalert = await db.get_cfg(member.guild.id, 'join_channel')
-        if joinalert:
-            message = await db.get_cfg(member.guild.id, 'join_message')
-            channel = self.bot.get_channel(joinalert)
-            await channel.send(message.format(member=member))
+        if dbcfg['join_channel']:
+            channel = self.bot.get_channel(dbcfg['join_channel'])
+            await channel.send(dbcfg['join_message'].format(member=member))
 
 
     # Do stuff to members upon leaving guild
     @commands.Cog.listener()
     async def on_member_remove(self, member):
-        leavealert = await db.get_cfg(member.guild.id, 'leave_channel')
-        if leavealert is not None:
-            message = await db.get_cfg(member.guild.id, 'leave_message')
-            channel = self.bot.get_channel(leavealert)
-            await channel.send(message.format(member=member))
+        dbcfg = await db.get_cfg(member.guild.id)
+        if dbcfg['leave_channel']:
+            channel = self.bot.get_channel(dbcfg['leave_channel'])
+            await channel.send(dbcfg['leave_message'].format(member=member))
 
 
     # Do stuff when members are updated

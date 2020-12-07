@@ -188,14 +188,14 @@ class Config(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message):
         if not message.author.bot and message.guild:
-            stats = await db.get_cfg(message.guild.id, 'guild_stats')
-            if stats == 'enabled':
+            dbcfg = await db.get_cfg(message.guild.id)
+            if dbcfg['guild_stats'] == 'enabled':
                 guildID = message.guild.id
                 member = message.author
                 profile = await db.get_member(guildID, member.id)
-                cashmin = await db.get_cfg(guildID, 'min_cash')
-                cashmax = await db.get_cfg(guildID, 'max_cash')
-                cashaward = random.randrange(cashmin, cashmax)
+                cashaward = random.randrange(
+                    dbcfg['min_cash'],
+                    dbcfg['max_cash'])
                 await db.add_currency(message.guild.id, member.id, cashaward)
                 curxp = profile['xp'] + 1
                 await db.set_member(guildID, member.id, 'xp', curxp)
@@ -210,32 +210,30 @@ class Config(commands.Cog):
 
     # Handler for guild reaction events
     async def star_check(self, payload, event):
-        starboard = await db.get_cfg(payload.guild_id, 'star_channel')
-        if not starboard:
+        dbcfg = await db.get_cfg(payload.guild_id)
+        if not dbcfg['star_channel']:
             return
-        starnsfw = await db.get_cfg(payload.guild_id, 'star_nsfw')
         guild = self.bot.get_guild(payload.guild_id)
         channel = guild.get_channel(payload.channel_id)
-        if channel.is_nsfw() and not starnsfw:
+        if channel.is_nsfw() and not dbcfg['star_nsfw']:
             return
         message = await channel.fetch_message(payload.message_id)
         if message.author.bot:
             return
-        threshold = await db.get_cfg(guild.id, 'star_threshold')
-        starred = await db.get_starred(message.id)
-        starchannel = guild.get_channel(starboard)
-        if not starred:
+        prevstar = await db.get_starred(message.id)
+        starchannel = guild.get_channel(dbcfg['star_channel'])
+        if not prevstar:
             for react in message.reactions:
-                if react.count >= threshold:                    
+                if react.count >= dbcfg['star_threshold']:                    
                     await self.star_add(message, starchannel)
                     break
         else:
             if len(message.reactions) < 2:
-                await self.star_remove(starchannel, starred)
+                await self.star_remove(starchannel, prevstar)
             else:
                 for react in message.reactions:
-                    if react.count < threshold:
-                        await self.star_remove(starchannel, starred)
+                    if react.count < dbcfg['star_threshold']:
+                        await self.star_remove(starchannel, prevstar)
                         break
 
 
