@@ -213,7 +213,7 @@ class Embeds(commands.Cog):
         Profile = self.MenuEmbed(ctx.author, head, desc, fields)
         await Profile.add_fields()
         # Fill out remaining un-set fields using target info
-        Profile.set_author(name=member.name)
+        Profile.set_author(name=f"{member.name}'s Profile'")
         avatar = member.avatar_url_as(format='png')
         Profile.set_thumbnail(url=avatar)
         # Send embed, add controls, and then loop
