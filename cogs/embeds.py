@@ -448,11 +448,11 @@ class Embeds(commands.Cog):
             if item['price'] == 0:
                 item['fdesc'] = (
                     f"{item['fdesc']}\n"
-                    f"Price: {currency} Free")
+                    f"Price: {dbcfg['currency']} Free")
             else:
                 item['fdesc'] = (
                     f"{item['fdesc']}\n"
-                    f"Price: {currency} {item['price']}")
+                    f"Price: {dbcfg['currency']} {item['price']}")
             # Add file size and type limits to prompt
             if item['format'] == 'text':
                 item['prompt'] = (
