@@ -417,7 +417,10 @@ class Embeds(commands.Cog):
         strings = await self.get_strings('Shop')
         # Set header and description of embed based on guild and invoker info
         head = strings['head'].format(ctx.guild.name)
-        desc = strings['desc'].format(ctx.author.name, currency, dbprof['cash'])
+        desc = strings['desc'].format(
+            ctx.author.name,
+            dbcfg['currency'],
+            dbprof['cash'])
         # Modify strings to include guild-specific data
         fields = []
         for item in strings['fields']:
