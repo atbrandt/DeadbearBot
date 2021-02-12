@@ -124,14 +124,15 @@ class Embeds(commands.Cog):
         validfiles = [".jpg", ".jpeg", ".gif", ".png", ".bmp"]
         # If the message had an attachment, make sure it's a valid image
         # If it is, preserve the original message so the url stays valid
-        if ctx.message.attachments[0]:
-            attachment = Path(ctx.message.attachments[0].filename)
-            if attachment.suffix in validfiles:
-                imageurl = ctx.message.attachments[0].url
-                embed.set_image(url=imageurl)
-            else:
-                await ctx.message.delete()
-        else:
+        try:
+            if ctx.message.attachments[0]:
+                attachment = Path(ctx.message.attachments[0].filename)
+                if attachment.suffix in validfiles:
+                    imageurl = ctx.message.attachments[0].url
+                    embed.set_image(url=imageurl)
+                else:
+                    await ctx.message.delete()
+        except:
             await ctx.message.delete()
         await ctx.channel.send(embed=embed)
 
