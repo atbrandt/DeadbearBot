@@ -411,6 +411,8 @@ class Embeds(commands.Cog):
                     dbcfg['currency'])
             except:
                 currency = u"\U0001F48E"
+        elif not dbcfg['currency']:
+            currency = u"\U0001F48E"
         # Get default strings for the shop menu
         strings = await self.get_strings('Shop')
         # Set header and description of embed based on guild and invoker info
