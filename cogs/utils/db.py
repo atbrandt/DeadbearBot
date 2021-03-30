@@ -62,7 +62,7 @@ async def get_cfg(guildID, option=None):
     if option:
         return fetched[option]
     else:
-        return fetched
+        return dict(fetched)
 
 
 # Sets a config option for a guild in the guilds table
