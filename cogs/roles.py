@@ -106,7 +106,7 @@ class Roles(commands.Cog):
     @commands.guild_only()
     @commands.is_owner()
     async def rr_list(self, ctx):
-        roles = dict(await db.get_react_roles(ctx.guild.id))
+        roles = await db.get_react_roles(ctx.guild.id)
         await ctx.channel.send(roles)
 
 

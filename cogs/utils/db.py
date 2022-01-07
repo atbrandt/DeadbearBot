@@ -276,6 +276,7 @@ async def get_react_roles(guildID):
     await c.execute(sql, (guildID,))
     fetched = await c.fetchall()
     await conn.close()
+    fetched = dict(row) for row in fetched
     return fetched
 
 

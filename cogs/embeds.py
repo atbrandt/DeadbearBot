@@ -480,12 +480,12 @@ class Embeds(commands.Cog):
                     break
                 # If none of selected item are available, throw error to user
                 elif Shop.selected['available'] == 0:
-                    edit = (f"**{Shop.selected['fname']} is not currently "
+                    edit = (f"**There are no {Shop.selected['fname']}'s "
                             f"available. Please select another item.**")
                     await message.edit(content=edit)
                 # If user doesn't have enough credits, throw error to user
                 elif dbprof['cash'] < Shop.selected['price']:
-                    edit = (f"**You don't have enough credits for "
+                    edit = (f"**You don't have enough credits for a "
                             f"{Shop.selected['fname']}!**")
                     await message.edit(content=edit)
                 # If checks pass, process purchase and set bought to true
@@ -506,7 +506,10 @@ class Embeds(commands.Cog):
             # If the item purchased requires a second step, send prompt2
             if Shop.selected['prompt2']:
                 edit = f"**{Shop.selected['fname']} bought! Check your DM's.**"
-                await message.edit(content=edit, delete_after=5.0)
+                await message.edit(
+                    content=edit,
+                    suppress=True,
+                    delete_after=5.0)
                 await db.add_temp(
                     ctx.guild.id,
                     ctx.author.id,
@@ -515,7 +518,10 @@ class Embeds(commands.Cog):
                 await ctx.author.send(content=Shop.selected['prompt'])
             else:
                 edit = f"**{Shop.selected['fname']} bought!**"
-                await message.edit(content=edit, delete_after=5.0)
+                await message.edit(
+                    content=edit,
+                    suppress=True,
+                    delete_after=5.0)
 
 
     # Command to set item availability in the shop
