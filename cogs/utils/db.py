@@ -276,8 +276,10 @@ async def get_react_roles(guildID):
     await c.execute(sql, (guildID,))
     fetched = await c.fetchall()
     await conn.close()
-    fetched = dict(row) for row in fetched
-    return fetched
+    converted = {}
+    for row in fetched:
+        converted.append(dict(row))
+    return converted
 
 
 # Adds a reaction role to database, excepting on exact duplicates
