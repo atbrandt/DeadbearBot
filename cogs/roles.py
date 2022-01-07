@@ -106,11 +106,11 @@ class Roles(commands.Cog):
     @commands.guild_only()
     @commands.is_owner()
     async def rr_list(self, ctx):
-        roles = await db.get_react_roles(ctx.guild.id)
+        rrlist = await db.get_react_roles(ctx.guild.id)
         formatted = ""
         line = ""
-        for item in roles:
-            for key, value in item:
+        for rr in rrlist:
+            for key, value in rr.items():
                 line += f"{key}: {value}\n"
             formatted += f"{line}\n\n"
             line = ""
