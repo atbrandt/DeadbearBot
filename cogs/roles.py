@@ -107,7 +107,14 @@ class Roles(commands.Cog):
     @commands.is_owner()
     async def rr_list(self, ctx):
         roles = await db.get_react_roles(ctx.guild.id)
-        await ctx.channel.send(roles)
+        formatted = ""
+        line = ""
+        for item in roles:
+            for key, value in item:
+                line += f"{key}: {value}\n"
+            formatted += f"{line}\n\n"
+            line = ""
+        await ctx.channel.send(formatted)
 
 
     # Command to add a voice chat role
