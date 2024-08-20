@@ -1,5 +1,5 @@
 # DeadbearBot
-![Example Image](https://puu.sh/GlPqj/136b74f98e.gif)
+![Example Image](https://i.imgur.com/p5hxboO.gif)
 
 ## What's it do?
 Currently, DeadbearBot can:
