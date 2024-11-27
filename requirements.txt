@@ -1,5 +1,4 @@
-discord.py==1.5.1
-aiosqlite==0.16.0
-discord==1.0.1
-python-dotenv==0.15.0
+discord.py==2.4.0
+aiosqlite==0.20.0
+python-dotenv==1.0.1
 PyYAML==6.0.2
