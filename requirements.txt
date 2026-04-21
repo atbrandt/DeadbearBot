@@ -1,4 +1,4 @@
 discord.py==2.4.0
 aiosqlite==0.20.0
-python-dotenv==1.0.1
+python-dotenv==1.2.2
 PyYAML==6.0.2
